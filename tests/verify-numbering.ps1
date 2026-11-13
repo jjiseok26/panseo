@@ -42,6 +42,31 @@ $manualX = $manual.TransformToAncestor($header).Transform([Windows.Point]::new(0
 $minimumX = $minimum.TransformToAncestor($header).Transform([Windows.Point]::new(0,0)).X
 if ($updateX -ge $manualX -or $manualX -ge $minimumX -or $manual.Parent -ne $minimum.Parent) { throw 'Header button order incorrect' }
 if ($null -ne $toolbar.FindName('FloatingCircle').Effect) { throw 'Floating circle still has a shadow' }
+# Start-number parsing and the actual toolbar apply action.
+foreach ($value in '', '0', '-1', '1.5', 'abc', '2147483648') {
+    $parsed = 0
+    if ([Panseo.Models.AppSettings]::TryParseStartNumber($value,[ref]$parsed)) { throw "Invalid start accepted: $value" }
+}
+$parsed = 0
+if (-not [Panseo.Models.AppSettings]::TryParseStartNumber(' 5 ',[ref]$parsed) -or $parsed -ne 5) { throw 'Valid start rejected' }
+$toolbar.FindName('TxtStartNumber').Text = '5'
+$apply = $toolbar.GetType().GetMethod('BtnApplyStartNumber_Click',$flags)
+[void]$apply.Invoke($toolbar,@($null,$null))
+foreach ($overlay in @($one,$two)) {
+    $event = [Windows.Input.MouseButtonEventArgs]::new([Windows.Input.Mouse]::PrimaryDevice,0,[Windows.Input.MouseButton]::Left)
+    $event.RoutedEvent = [Windows.Input.Mouse]::MouseDownEvent
+    [void]$down.Invoke($overlay,@($event))
+}
+if ($canvasOne.Children[$canvasOne.Children.Count-1].Tag -ne 5 -or $canvasTwo.Children[$canvasTwo.Children.Count-1].Tag -ne 6) { throw 'Custom start not used across monitors' }
+$toolbar.FindName('TxtStartNumber').Text = '0'
+[void]$apply.Invoke($toolbar,@($null,$null))
+if ($settings.TakeNextNumber() -ne 7) { throw 'Invalid input changed current sequence' }
+$before = $canvasOne.Children.Count
+[void]$toolbar.GetType().GetMethod('BtnResetNumber_Click',$flags).Invoke($toolbar,@($null,$null))
+if ($settings.TakeNextNumber() -ne 1 -or $canvasOne.Children.Count -ne $before -or $toolbar.FindName('TxtStartNumber').Text -ne '1') { throw 'Reset changed old stamps or input was not reset' }
+$settings.SetStartNumber([int]::MaxValue)
+if ($settings.TakeNextNumber() -ne 2147483647L -or $settings.TakeNextNumber() -ne 2147483648L) { throw 'Large start overflowed' }
+$settings.ResetNumbering()
 $pixels = [byte[]]::new(320*200*4)
 $image = [Windows.Media.Imaging.BitmapSource]::Create(320,200,96,96,[Windows.Media.PixelFormats]::Bgra32,$null,$pixels,1280)
 $editor = [Panseo.Views.CaptureEditorWindow]::new($image)
@@ -56,6 +81,18 @@ $canvas = $editor.GetType().GetField('_canvas',$flags).GetValue($editor)
 if ($canvas.Children.Count -ne 3 -or $canvas.Children[2].Tag -ne 3 -or $editor.GetType().GetField('_drawing',$flags).GetValue($editor)) { throw 'Capture click numbering failed' }
 $editor.Undo(); $editor.Redo()
 if ($canvas.Children.Count -ne 3) { throw 'Capture number undo/redo failed' }
+$input = $editor.GetType().GetField('_startNumberInput',$flags).GetValue($editor)
+$input.Text = '80'
+[void]$editor.GetType().GetMethod('ApplyStartNumber',$flags).Invoke($editor,@())
+foreach ($index in 1..2) {
+    $event = [Windows.Input.MouseButtonEventArgs]::new([Windows.Input.Mouse]::PrimaryDevice,0,[Windows.Input.MouseButton]::Left)
+    $event.RoutedEvent = [Windows.Input.Mouse]::MouseDownEvent
+    [void]$mouseDown.Invoke($editor,@($editor,$event))
+}
+if ($canvas.Children.Count -ne 5 -or $canvas.Children[3].Tag -ne 80 -or $canvas.Children[4].Tag -ne 81) { throw 'Capture custom start failed' }
+$input.Text = '-2'
+[void]$editor.GetType().GetMethod('ApplyStartNumber',$flags).Invoke($editor,@())
+if ($editor.GetType().GetField('_nextNumber',$flags).GetValue($editor) -ne 82) { throw 'Invalid capture input changed sequence' }
 $preview = [Windows.Controls.Canvas]::new()
 $preview.Background = [Windows.Media.Brushes]::White
 $x = 30
@@ -73,4 +110,4 @@ $encoder = [Windows.Media.Imaging.PngBitmapEncoder]::new()
 $encoder.Frames.Add([Windows.Media.Imaging.BitmapFrame]::Create($bitmap))
 $stream = [IO.File]::Create((Join-Path $PSScriptRoot 'numbering-preview.png'))
 try { $encoder.Save($stream) } finally { $stream.Dispose() }
-'PASS: click numbering across monitors, reset, undo/redo, capture numbering, header button order, shadow removal.'
+'PASS: custom starts, validation, large-number safety, cross-monitor sequence, reset, undo/redo, capture input, header order, shadow removal.'

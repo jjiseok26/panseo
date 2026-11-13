@@ -11,7 +11,7 @@ $card = $window.FindName('MenuCard')
 $card.Measure([Windows.Size]::new($window.Width, $window.Height))
 $card.Arrange([Windows.Rect]::new(0, 0, $window.Width, $window.Height))
 $card.UpdateLayout()
-foreach ($name in 'RbPointerCircle', 'RbToolMouse', 'RbToolEraser', 'BtnSaveScreenshot', 'BtnClearAll', 'BtnPinScreenshot', 'BtnScreenZoom', 'BtnManual', 'BtnUpdateCheck', 'RbToolNumber', 'BtnResetNumber', 'ChkBlackboard') {
+foreach ($name in 'RbPointerCircle', 'RbToolMouse', 'RbToolEraser', 'BtnSaveScreenshot', 'BtnClearAll', 'BtnPinScreenshot', 'BtnScreenZoom', 'BtnManual', 'BtnUpdateCheck', 'RbToolNumber', 'BtnResetNumber', 'TxtStartNumber', 'BtnApplyStartNumber', 'ChkBlackboard') {
     $control = $window.FindName($name)
     $rect = $control.TransformToAncestor($card).TransformBounds([Windows.Rect]::new(0, 0, $control.ActualWidth, $control.ActualHeight))
     if ($rect.Width -le 0 -or $rect.Height -le 0 -or $rect.Right -gt $card.ActualWidth + 1 -or $rect.Bottom -gt $card.ActualHeight + 1) { throw "Control clipped: $name ($rect)" }

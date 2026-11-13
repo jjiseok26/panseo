@@ -33,10 +33,19 @@ namespace Panseo.Models
         private double _fontSize = 22.0;
         private bool _isBlackboardActive = false;
         private bool _isTextEditing = false;
-        private int _nextNumber = 1;
+        private long _nextNumber = 1;
 
-        public int TakeNextNumber() { return _nextNumber++; }
-        public void ResetNumbering() { _nextNumber = 1; }
+        public long TakeNextNumber() { return _nextNumber++; }
+        public void ResetNumbering() { SetStartNumber(1); }
+        public void SetStartNumber(int number)
+        {
+            if (number < 1) throw new ArgumentOutOfRangeException("number");
+            _nextNumber = number;
+        }
+        public static bool TryParseStartNumber(string text, out int number)
+        {
+            return int.TryParse(text, out number) && number > 0;
+        }
 
         public bool IsTextEditing
         {

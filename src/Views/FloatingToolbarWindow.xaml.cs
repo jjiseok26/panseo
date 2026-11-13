@@ -230,7 +230,7 @@ namespace Panseo.Views
         private IntPtr KeyboardHookCallback(int nCode, IntPtr wParam, IntPtr lParam)
         {
             // 캡처 창의 입력은 해당 창이 처리하여 바탕화면 판서와 충돌하지 않게 한다.
-            if (_isCapturing || _zoomWindow != null || App.IsUpdateGuideActive || (_manualWindow != null && _manualWindow.IsActive) || GetActiveCaptureEditor() != null)
+            if ((IsActive && Keyboard.FocusedElement is TextBox) || _isCapturing || _zoomWindow != null || App.IsUpdateGuideActive || (_manualWindow != null && _manualWindow.IsActive) || GetActiveCaptureEditor() != null)
                 return Win32.CallNextHookEx(_keyboardHookId, nCode, wParam, lParam);
             if (nCode >= 0 && (wParam.ToInt32() == Win32.WM_KEYDOWN || wParam.ToInt32() == Win32.WM_SYSKEYDOWN))
             {
@@ -811,6 +811,9 @@ namespace Panseo.Views
         private void BtnClearAll_Click(object sender, RoutedEventArgs e)
         {
             if (_overlayManager != null) _overlayManager.ClearAll();
+            TxtStartNumber.Text = "1";
+            TxtNumberStatus.Text = "입력 후 적용 또는 Enter";
+            TxtNumberStatus.Foreground = (Brush)FindResource("TextSecondaryBrush");
         }
 
         private void BtnSaveScreenshot_Click(object sender, RoutedEventArgs e)
@@ -834,7 +837,38 @@ namespace Panseo.Views
             else { _manualWindow.WindowState = WindowState.Normal; _manualWindow.Activate(); }
         }
 
-        private void BtnResetNumber_Click(object sender, RoutedEventArgs e) { AppSettings.Instance.ResetNumbering(); }
+        private void BtnResetNumber_Click(object sender, RoutedEventArgs e)
+        {
+            AppSettings.Instance.ResetNumbering();
+            TxtStartNumber.Text = "1";
+            TxtNumberStatus.Text = "다음 클릭부터 1번으로 시작합니다.";
+            TxtNumberStatus.Foreground = Brushes.LightGreen;
+        }
+
+        private void BtnApplyStartNumber_Click(object sender, RoutedEventArgs e)
+        {
+            int number;
+            if (!AppSettings.TryParseStartNumber(TxtStartNumber.Text, out number))
+            {
+                TxtNumberStatus.Text = "1~2147483647 사이의 정수를 입력하세요.";
+                TxtNumberStatus.Foreground = Brushes.LightSalmon;
+                TxtStartNumber.Focus();
+                TxtStartNumber.SelectAll();
+                return;
+            }
+            AppSettings.Instance.SetStartNumber(number);
+            SelectTool(DrawingTool.Number);
+            TxtNumberStatus.Text = "다음 클릭부터 " + number + "번으로 시작합니다.";
+            TxtNumberStatus.Foreground = Brushes.LightGreen;
+            BtnApplyStartNumber.Focus();
+        }
+
+        private void TxtStartNumber_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key != Key.Enter) return;
+            BtnApplyStartNumber_Click(sender, e);
+            e.Handled = true;
+        }
         private void BtnUpdateCheck_Click(object sender, RoutedEventArgs e)
         {
             var app = Application.Current as App;

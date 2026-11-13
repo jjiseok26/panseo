@@ -25,7 +25,8 @@ namespace Panseo.Views
         private UIElement _preview;
         private TextBox _textEditor;
         private bool _drawing;
-        private int _nextNumber = 1;
+        private long _nextNumber = 1;
+        private readonly TextBox _startNumberInput;
 
         public CaptureEditorWindow(BitmapSource image)
         {
@@ -50,7 +51,14 @@ namespace Panseo.Views
             AddTool(tools, "화살표 Ctrl+A", DrawingTool.Arrow);
             AddTool(tools, "글자 Ctrl+T", DrawingTool.Text);
             AddTool(tools, "번호 Ctrl+N", DrawingTool.Number);
-            AddButton(tools, "번호 1부터", () => _nextNumber = 1);
+            AddButton(tools, "번호 1부터", ResetNumbering);
+            var numberControls = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(3) };
+            numberControls.Children.Add(new TextBlock { Text = "시작번호", Foreground = Brushes.White, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0,0,5,0) });
+            _startNumberInput = new TextBox { Text = "1", Width = 82, Padding = new Thickness(4), VerticalContentAlignment = VerticalAlignment.Center, ToolTip = "1~2147483647 입력 후 적용 또는 Enter" };
+            _startNumberInput.KeyDown += (s, e) => { if (e.Key == Key.Enter) { ApplyStartNumber(); e.Handled = true; } };
+            numberControls.Children.Add(_startNumberInput);
+            AddButton(numberControls, "번호 적용", ApplyStartNumber);
+            tools.Children.Add(numberControls);
             AddButton(tools, "되돌리기 Ctrl+Z", Undo);
             AddButton(tools, "다시 실행 Ctrl+Y", Redo);
             AddButton(tools, "저장 Ctrl+F10", SaveCapture);
@@ -132,6 +140,29 @@ namespace Panseo.Views
                 _preview = CreateShape(_tool, _start, point);
                 _canvas.Children.Add(_preview);
             }
+        }
+
+        private void ApplyStartNumber()
+        {
+            int number;
+            if (!AppSettings.TryParseStartNumber(_startNumberInput.Text, out number))
+            {
+                _status.Text = "시작번호는 1~2147483647 사이의 정수를 입력하세요.";
+                _startNumberInput.Focus();
+                _startNumberInput.SelectAll();
+                return;
+            }
+            _nextNumber = number;
+            SelectTool(DrawingTool.Number);
+            _status.Text = "다음 클릭부터 " + number + "번으로 시작합니다.";
+            Keyboard.ClearFocus();
+        }
+
+        private void ResetNumbering()
+        {
+            _nextNumber = 1;
+            _startNumberInput.Text = "1";
+            _status.Text = "다음 클릭부터 1번으로 시작합니다.";
         }
 
         private void StampNumber(Point point)
@@ -237,7 +268,7 @@ namespace Panseo.Views
                 case Key.N: SelectTool(DrawingTool.Number); break;
                 case Key.F10: SaveCapture(); break;
                 case Key.F11: PinCapture(); break;
-                case Key.Delete: CommitText(false); _canvas.Children.Clear(); _redo.Clear(); _nextNumber = 1; break;
+                case Key.Delete: CommitText(false); _canvas.Children.Clear(); _redo.Clear(); ResetNumbering(); break;
                 default: return;
             }
             e.Handled = true;

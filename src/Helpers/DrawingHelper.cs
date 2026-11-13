@@ -8,7 +8,7 @@ namespace Panseo.Helpers
 {
     public static class DrawingHelper
     {
-        public static FrameworkElement CreateNumberStamp(int number, Point center, Color color, double thickness)
+        public static FrameworkElement CreateNumberStamp(long number, Point center, Color color, double thickness)
         {
             double diameter = Math.Max(32, thickness * 8);
             var foreground = (0.299 * color.R + 0.587 * color.G + 0.114 * color.B) > 170 ? Brushes.Black : Brushes.White;

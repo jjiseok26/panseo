@@ -51,10 +51,13 @@ namespace Panseo.Views
             cards.Children.Add(Card("Ctrl+Q · 화면 확대/축소", zoom,
                 "Ctrl+Q로 들어간 뒤 휠을 위로 굴리면 확대, 아래로 굴리면 축소합니다. 드래그로 살펴보고 Esc로 나옵니다. 진입 순간의 정지 화면입니다."));
             var numbers = Picture();
-            foreach (int number in new[] { 1, 2, 3 })
-                numbers.Children.Add(DrawingHelper.CreateNumberStamp(number, new Point(40 + (number - 1) * 90, 50), Color.FromRgb(79, 70, 229), 5));
-            cards.Children.Add(Card("Ctrl+N · 클릭마다 번호 넣기", numbers,
-                "한 번 클릭할 때마다 ①, ②, ③처럼 번호가 이어집니다. ‘번호 1부터’를 누르면 기존 표시를 남기고 다시 1부터 시작합니다."));
+            Label(numbers, 12, 2, "시작번호", 12);
+            Box(numbers, 82, 0, 52, 25, "5", Brushes.AliceBlue);
+            Box(numbers, 142, 0, 60, 25, "적용", Brushes.Lavender);
+            foreach (int number in new[] { 5, 6, 7 })
+                numbers.Children.Add(DrawingHelper.CreateNumberStamp(number, new Point(40 + (number - 5) * 90, 66), Color.FromRgb(79, 70, 229), 5));
+            cards.Children.Add(Card("Ctrl+N · 원하는 번호부터 시작", numbers,
+                "시작번호에 숫자를 입력하고 ‘적용’ 또는 Enter를 누르세요. 5를 입력하면 다음 클릭부터 5, 6, 7…로 이어집니다. 기존 표시는 그대로 남습니다."));
             var pin = Picture();
             Box(pin, 18, 8, 224, 84, "", Brushes.AliceBlue);
             Label(pin, 35, 18, "고정 캡처", 13);

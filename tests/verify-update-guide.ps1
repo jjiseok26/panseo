@@ -7,7 +7,7 @@ $guide = $type.GetMethod('CreateIllustratedGuide',[Reflection.BindingFlags]'Stat
 $cards = $guide.Children[1]
 if ($cards.Children.Count -ne 4) { throw 'Update illustrations missing' }
 if (-not $cards.Children[0].Child.Children[0].Text.Contains('Ctrl+Q')) { throw 'Zoom shortcut in illustration incorrect' }
-if ($cards.Children[1].Child.Children[1].Child.Children.Count -ne 3) { throw 'Number illustration missing' }
+if ($cards.Children[1].Child.Children[1].Child.Children.Count -ne 6) { throw 'Number illustration missing' }
 $guide.Measure([Windows.Size]::new(720,[double]::PositiveInfinity))
 $height = [int][Math]::Ceiling($guide.DesiredSize.Height)
 $guide.Arrange([Windows.Rect]::new(0,0,720,$height))
