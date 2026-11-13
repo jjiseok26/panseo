@@ -18,6 +18,12 @@ namespace Panseo
         private NotifyIcon _trayIcon;
         private Icon _applicationIcon;
         private AutoUpdater _updater;
+        private UpdateGuideWindow _updateGuideWindow;
+        private string _lastUpdateStatus = "업데이트 확인 버튼을 눌러 새 버전을 확인하세요.";
+        public static bool IsUpdateGuideActive
+        {
+            get { var app = Current as App; return app != null && app._updateGuideWindow != null && app._updateGuideWindow.IsActive; }
+        }
         private System.Windows.Threading.DispatcherTimer _updateTimer;
 
         public static FloatingToolbarWindow ToolbarWindow { get; private set; }
@@ -86,18 +92,37 @@ namespace Panseo
         public async void CheckForUpdates(bool manual)
         {
             if (_updater == null) return;
+            if (manual) ShowUpdateGuide("새 버전을 확인하고 있습니다…");
             try
             {
                 string status = await _updater.CheckAsync();
                 if (status == null) return;
-                if (manual) MessageBox.Show(status, "Panseo 업데이트", MessageBoxButton.OK, MessageBoxImage.Information);
-                else if (status.StartsWith("새 버전") && _trayIcon != null)
+                _lastUpdateStatus = status;
+                if (_updateGuideWindow != null) _updateGuideWindow.SetStatus(status);
+                if (!manual && status.StartsWith("새 버전") && _trayIcon != null)
                     _trayIcon.ShowBalloonTip(6000, "Panseo 자동 업데이트", status, ToolTipIcon.Info);
             }
             catch (Exception ex)
             {
                 _updater.Log(ex);
-                if (manual) MessageBox.Show("업데이트를 확인할 수 없습니다.\n" + ex.Message, "Panseo 업데이트", MessageBoxButton.OK, MessageBoxImage.Information);
+                _lastUpdateStatus = "업데이트를 확인할 수 없습니다. 인터넷 연결을 확인한 뒤 다시 시도하세요.\n" + ex.Message;
+                if (_updateGuideWindow != null) _updateGuideWindow.SetStatus(_lastUpdateStatus);
+            }
+        }
+
+        private void ShowUpdateGuide(string status)
+        {
+            if (_updateGuideWindow == null)
+            {
+                _updateGuideWindow = new UpdateGuideWindow(status);
+                _updateGuideWindow.Closed += (s, e) => _updateGuideWindow = null;
+                _updateGuideWindow.Show();
+            }
+            else
+            {
+                _updateGuideWindow.SetStatus(status);
+                _updateGuideWindow.WindowState = WindowState.Normal;
+                _updateGuideWindow.Activate();
             }
         }
 
@@ -107,6 +132,7 @@ namespace Panseo
             {
                 _trayIcon = new NotifyIcon();
                 _trayIcon.Text = "Panseo 판서 & 포인터";
+                _trayIcon.BalloonTipClicked += (s, e) => ShowUpdateGuide(_lastUpdateStatus);
 
                 // 포터블 실행 파일에 내장한 아이콘을 사용한다.
                 _applicationIcon = AppIcon.Load();
@@ -139,7 +165,7 @@ namespace Panseo
                     _toolbarWindow.Dispatcher.Invoke((Action)(() => _toolbarWindow.ToggleBlackboard()));
                 }));
 
-                contextMenu.MenuItems.Add(new MenuItem("확대/축소 (Ctrl+F12)", (s, ev) => _toolbarWindow.ToggleScreenZoom()));
+                contextMenu.MenuItems.Add(new MenuItem("확대/축소 (Ctrl+Q)", (s, ev) => _toolbarWindow.ToggleScreenZoom()));
                 contextMenu.MenuItems.Add(new MenuItem("사용 설명서", (s, ev) => _toolbarWindow.ShowManual()));
                 contextMenu.MenuItems.Add(new MenuItem("업데이트 확인", (s, ev) => CheckForUpdates(true)));
                 contextMenu.MenuItems.Add("-");

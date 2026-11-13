@@ -87,7 +87,7 @@ namespace Panseo.Views
 
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
-            // 전역 단축키 등록 (Ctrl+F1 ~ Ctrl+F11, Ctrl+M)
+            // 전역 단축키 등록 (Ctrl+F1 ~ Ctrl+F11, Ctrl+M, Ctrl+Q)
             try
             {
                 var helper = new WindowInteropHelper(this);
@@ -104,7 +104,7 @@ namespace Panseo.Views
                 Win32.RegisterHotKey(helper.Handle, HOTKEY_ID_CAPTURE, MOD_CONTROL | 0x4000, 0x79);
                 Win32.RegisterHotKey(helper.Handle, HOTKEY_ID_PIN, MOD_CONTROL | 0x4000, 0x7A);
                 Win32.RegisterHotKey(helper.Handle, HOTKEY_ID_MOUSE, MOD_CONTROL, 0x4D);
-                Win32.RegisterHotKey(helper.Handle, HOTKEY_ID_ZOOM, MOD_CONTROL | 0x4000, 0x7B);
+                Win32.RegisterHotKey(helper.Handle, HOTKEY_ID_ZOOM, MOD_CONTROL | 0x4000, 0x51);
                 for (int i = 0; i < PointerShortcutShapes.Length; i++)
                 {
                     Win32.RegisterHotKey(helper.Handle, HOTKEY_ID_POINTER_FIRST + i, MOD_CONTROL, (uint)(0x74 + i)); // Ctrl+F5 ~ F9
@@ -230,7 +230,7 @@ namespace Panseo.Views
         private IntPtr KeyboardHookCallback(int nCode, IntPtr wParam, IntPtr lParam)
         {
             // 캡처 창의 입력은 해당 창이 처리하여 바탕화면 판서와 충돌하지 않게 한다.
-            if (_isCapturing || _zoomWindow != null || (_manualWindow != null && _manualWindow.IsActive) || GetActiveCaptureEditor() != null)
+            if (_isCapturing || _zoomWindow != null || App.IsUpdateGuideActive || (_manualWindow != null && _manualWindow.IsActive) || GetActiveCaptureEditor() != null)
                 return Win32.CallNextHookEx(_keyboardHookId, nCode, wParam, lParam);
             if (nCode >= 0 && (wParam.ToInt32() == Win32.WM_KEYDOWN || wParam.ToInt32() == Win32.WM_SYSKEYDOWN))
             {
@@ -434,7 +434,7 @@ namespace Panseo.Views
                 case DrawingTool.Text: icon = "🔤"; break;
                 case DrawingTool.Eraser: icon = "🧽"; break;
                 case DrawingTool.Number: icon = "①"; break;
-                default: icon = "판서"; break;
+                default: icon = "✏️"; break;
             }
             TxtCircleToolIcon.Text = icon;
 

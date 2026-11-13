@@ -137,7 +137,7 @@
 
             <Grid>
                 <!-- 판서 연필/도구 아이콘 -->
-                <TextBlock x:Name="TxtCircleToolIcon" Text="판서" FontSize="18" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                <TextBlock x:Name="TxtCircleToolIcon" Text="✏️" FontSize="20" HorizontalAlignment="Center" VerticalAlignment="Center"/>
             </Grid>
         </Border>
 
@@ -315,7 +315,7 @@
                                     </Button>
                                 </UniformGrid>
                                 <Button x:Name="BtnPinScreenshot" Content="📌 영역 캡처 고정 [Ctrl+F11]" Style="{StaticResource SidebarButtonStyle}" Click="BtnPinScreenshot_Click" ToolTip="영역을 선택하여 맨 위에 고정"/>
-                                <Button x:Name="BtnScreenZoom" Content="🔍 확대/축소 [Ctrl+F12]" Style="{StaticResource SidebarButtonStyle}" Click="BtnScreenZoom_Click" ToolTip="현재 화면을 휠로 확대/축소"/>
+                                <Button x:Name="BtnScreenZoom" Content="🔍 확대/축소 [Ctrl+Q]" Style="{StaticResource SidebarButtonStyle}" Click="BtnScreenZoom_Click" ToolTip="현재 화면을 휠로 확대/축소"/>
                             </StackPanel>
                         </Border>
 

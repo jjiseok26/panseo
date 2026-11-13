@@ -15,7 +15,7 @@ try {
     & $builderPath Panseo.csproj /t:Rebuild /p:Configuration=Release /verbosity:minimal /nologo
     if ($LASTEXITCODE -ne 0) { throw 'Build failed' }
     $powershell = Join-Path $env:WINDIR 'System32\WindowsPowerShell\v1.0\powershell.exe'
-    foreach ($test in 'verify-ui.ps1', 'verify-capture.ps1', 'verify-update.ps1', 'verify-zoom.ps1', 'verify-numbering.ps1') {
+    foreach ($test in 'verify-ui.ps1', 'verify-capture.ps1', 'verify-update.ps1', 'verify-zoom.ps1', 'verify-numbering.ps1', 'verify-update-guide.ps1') {
         & $powershell -NoProfile -STA -ExecutionPolicy Bypass -File (Join-Path $root "tests\$test")
         if ($LASTEXITCODE -ne 0) { throw "Failed: $test" }
     }
@@ -23,5 +23,6 @@ try {
     Copy-Item -LiteralPath bin\Release\Panseo.exe -Destination dist\Panseo.exe -Force
     Copy-Item -LiteralPath bin\Release\Panseo.exe -Destination dist\panseo_portable.exe -Force
     Compress-Archive -LiteralPath dist\panseo_portable.exe,README.md -DestinationPath dist\panseo_portable.zip -Force
+    Copy-Item -LiteralPath tests\update-guide.png -Destination dist\update-guide.png -Force
     Get-FileHash -LiteralPath dist\Panseo.exe -Algorithm SHA256
 } finally { Pop-Location }

@@ -71,6 +71,7 @@
     <Compile Include="src\App.xaml.cs">
       <DependentUpon>App.xaml</DependentUpon>
     </Compile>
+    <Compile Include="src\Views\UpdateGuideWindow.cs" />
     <Compile Include="src\Views\ZoomImageView.cs" />
     <Compile Include="src\Views\ScreenZoomWindow.cs" />
     <Compile Include="src\Views\ManualWindow.cs" />
