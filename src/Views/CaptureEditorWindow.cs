@@ -155,7 +155,7 @@ namespace Panseo.Views
             _nextNumber = number;
             SelectTool(DrawingTool.Number);
             _status.Text = "다음 클릭부터 " + number + "번으로 시작합니다.";
-            Keyboard.ClearFocus();
+            _tools[DrawingTool.Number].Focus();
         }
 
         private void ResetNumbering()
