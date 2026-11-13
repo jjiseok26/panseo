@@ -13,4 +13,4 @@ $status
 $updateFolder = $type.GetField('_folder',[Reflection.BindingFlags]'Instance,NonPublic').GetValue($instance)
 @{ target = $target; folder = $updateFolder } | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $PSScriptRoot 'update-fixtures\live-result.json') -Encoding UTF8
 [void]$type.GetMethod('ApplyOnExit').Invoke($instance,@())
-'Updater launched; installation is deferred until this test process exits.'
+'Verified on-disk updater launched; installation waits for this test process to exit.'

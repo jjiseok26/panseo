@@ -7,6 +7,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using System.Threading;
 using System.Web.Script.Serialization;
 
 namespace Panseo.Helpers
@@ -107,30 +108,84 @@ namespace Panseo.Helpers
                 var release = ParseRelease(File.ReadAllText(metadata), CurrentVersion);
                 string staged = Path.Combine(_folder, "Panseo.exe");
                 if (release == null || !VerifyFile(staged, release)) return;
-                string script;
-                using (var stream = typeof(AutoUpdater).Assembly.GetManifestResourceStream("Panseo.ApplyUpdate.ps1"))
-                using (var reader = new StreamReader(stream)) script = reader.ReadToEnd();
-                string command = "& {" + script + "} -ProcessId " + Process.GetCurrentProcess().Id +
-                    " -SourcePath " + Quote(staged) + " -TargetPath " + Quote(_target) +
-                    " -ExpectedHash " + Quote(release.assets[0].digest.Substring(7)) +
-                    " -MetadataPath " + Quote(metadata) + " -LogPath " + Quote(Path.Combine(_folder, "update.log"));
-                var info = new ProcessStartInfo(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), @"WindowsPowerShell\v1.0\powershell.exe"),
-                    "-NoProfile -NonInteractive -WindowStyle Hidden -ExecutionPolicy Bypass -EncodedCommand " +
-                    Convert.ToBase64String(Encoding.Unicode.GetBytes(command)))
-                { UseShellExecute = false, CreateNoWindow = true, WindowStyle = ProcessWindowStyle.Hidden };
+                // Run the verified on-disk application in its visible update-install mode.
+                var info = new ProcessStartInfo(staged,
+                    "--apply-update " + Process.GetCurrentProcess().Id + " " + QuoteExecutablePath(_target))
+                { UseShellExecute = false, WorkingDirectory = _folder, WindowStyle = ProcessWindowStyle.Normal };
                 using (Process.Start(info)) { }
             }
             catch (Exception ex) { Log(ex); }
         }
 
-        internal static string Quote(string value) { return "'" + value.Replace("'", "''") + "'"; }
+        internal static string QuoteExecutablePath(string path)
+        {
+            if (path.IndexOf('"') >= 0 || !string.Equals(Path.GetExtension(path), ".exe", StringComparison.OrdinalIgnoreCase))
+                throw new ArgumentException("Invalid executable path.");
+            return "\"" + path + "\"";
+        }
 
-        public void Log(Exception error)
+        internal static void ApplyUpdateFromArguments(string[] args)
+        {
+            int processId;
+            if (args.Length != 3 || args[0] != "--apply-update" || !int.TryParse(args[1], out processId) ||
+                processId <= 0 || processId == Process.GetCurrentProcess().Id)
+                throw new ArgumentException("Invalid update arguments.");
+            var updater = new AutoUpdater(args[2]);
+            try
+            {
+                string staged = Path.Combine(updater._folder, "Panseo.exe");
+                string current = Process.GetCurrentProcess().MainModule.FileName;
+                if (!string.Equals(Path.GetFullPath(current), staged, StringComparison.OrdinalIgnoreCase))
+                    throw new InvalidDataException("Updater must run from its verified update folder.");
+                Process previous = null;
+                try { previous = Process.GetProcessById(processId); }
+                catch (ArgumentException) { }
+                if (previous != null)
+                {
+                    using (previous)
+                        if (!previous.WaitForExit(120000)) throw new IOException("Program is still running; update deferred.");
+                }
+                string metadata = Path.Combine(updater._folder, "release.json");
+                var installed = AssemblyName.GetAssemblyName(updater._target).Version;
+                var release = ParseRelease(File.ReadAllText(metadata), installed);
+                if (release == null) return;
+                InstallVerifiedUpdate(staged, updater._target, release);
+                File.Delete(metadata);
+                updater.WriteLog("Updated to " + release.tag_name);
+            }
+            catch (Exception ex) { updater.Log(ex); throw; }
+        }
+
+        internal static void InstallVerifiedUpdate(string source, string target, ReleaseInfo release)
+        {
+            if (!VerifyFile(source, release)) throw new InvalidDataException("Update version or SHA-256 mismatch.");
+            var incoming = AssemblyName.GetAssemblyName(source);
+            var installed = AssemblyName.GetAssemblyName(target);
+            string product = typeof(AutoUpdater).Assembly.GetName().Name;
+            if (incoming.Name != product || installed.Name != product)
+                throw new InvalidDataException("Update target is not Panseo.");
+            if (installed.Version >= incoming.Version) return;
+            if (string.Equals(Path.GetFullPath(source), Path.GetFullPath(target), StringComparison.OrdinalIgnoreCase))
+                throw new InvalidDataException("Update source and destination must differ.");
+            string replacement = target + ".update-new";
+            string backup = target + ".update-backup";
+            File.Copy(source, replacement, true);
+            if (!VerifyFile(replacement, release)) throw new InvalidDataException("Copied update failed verification.");
+            for (int attempt = 0; ; attempt++)
+            {
+                try { File.Replace(replacement, target, backup, true); break; }
+                catch (IOException) { if (attempt >= 29) throw; Thread.Sleep(200); }
+            }
+        }
+
+        public void Log(Exception error) { WriteLog(error.Message); }
+
+        private void WriteLog(string message)
         {
             try
             {
                 Directory.CreateDirectory(_folder);
-                File.AppendAllText(Path.Combine(_folder, "update.log"), DateTime.Now.ToString("s") + " " + error.Message + Environment.NewLine);
+                File.AppendAllText(Path.Combine(_folder, "update.log"), DateTime.Now.ToString("s") + " " + message + Environment.NewLine);
             }
             catch (IOException) { }
             catch (UnauthorizedAccessException) { }

@@ -66,14 +66,11 @@ namespace Panseo.Views
             cards.Children.Add(Card("고정 캡처도 확대/축소", pin,
                 "Ctrl+F11로 영역을 고정합니다. 이미지 위에서 휠로 확대하고 Ctrl+드래그로 안쪽을 이동합니다. 우클릭하면 저장하기·닫기가 나옵니다."));
             var menu = Picture();
-            var circle = new Border { Width = 42, Height = 42, CornerRadius = new CornerRadius(21), Background = Brushes.MediumSlateBlue,
-                Child = new TextBlock { Text = "✏️", FontSize = 23, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center } };
-            Canvas.SetLeft(circle, 6); Canvas.SetTop(circle, 28); menu.Children.Add(circle);
-            Box(menu, 59, 32, 72, 30, "업데이트", Brushes.Lavender);
-            Box(menu, 136, 32, 65, 30, "설명서", Brushes.Lavender);
-            Box(menu, 206, 32, 34, 30, "─", Brushes.Gainsboro);
-            cards.Children.Add(Card("연필 버튼과 제목표시줄", menu,
-                "플로팅 동그라미는 연필 모양으로 돌아왔습니다. 업데이트·설명서 버튼은 최소화 버튼 왼쪽에서 찾을 수 있습니다."));
+            Box(menu, 6, 30, 74, 36, "SHA-256", Brushes.LightSteelBlue);
+            Label(menu, 88, 37, "→", 20);
+            Box(menu, 124, 14, 128, 70, "업데이트 설치 창", Brushes.AliceBlue);
+            cards.Children.Add(Card("일반 실행 파일로 업데이트", menu,
+                "PowerShell 명령 대신 검증한 실행 파일을 디스크에서 실행합니다. 설치 창에서 진행 상황을 보여주며 보안 제품 설정은 바꾸지 않습니다."));
             panel.Children.Add(cards);
             panel.Children.Add(new Border { Background = Brushes.White, CornerRadius = new CornerRadius(10), Padding = new Thickness(16), Margin = new Thickness(6),
                 Child = new TextBlock { Text = "업데이트 적용 순서\n확인 → 자동 다운로드·검증 → 트레이에서 프로그램 종료 → 다시 실행\n\n메뉴를 접는 것은 종료가 아닙니다. 현재 작업은 강제로 닫지 않으며 다음 실행부터 새 버전이 적용됩니다.",

@@ -1,4 +1,4 @@
-﻿$ErrorActionPreference = 'Stop'
+$ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName PresentationFramework, PresentationCore, WindowsBase, System.Web.Extensions
 $root = Split-Path $PSScriptRoot -Parent
 $assembly = [Reflection.Assembly]::LoadFrom((Join-Path $root 'bin\Release\Panseo.exe'))
@@ -6,12 +6,15 @@ $updater = $assembly.GetType('Panseo.Helpers.AutoUpdater')
 $flags = [Reflection.BindingFlags]'Static,NonPublic'
 $parse = $updater.GetMethod('ParseRelease', $flags)
 $verify = $updater.GetMethod('VerifyFile', $flags)
-$quote = $updater.GetMethod('Quote', $flags)
-if ($quote.Invoke($null, @("C:\O'Brien\a.exe")) -ne "'C:\O''Brien\a.exe'") { throw 'Path quoting failed' }
+$quote = $updater.GetMethod('QuoteExecutablePath', $flags)
+if ($quote.Invoke($null, @("C:\O'Brien\a.exe")) -ne '"C:\O''Brien\a.exe"') { throw 'Path quoting failed' }
+if ($assembly.GetManifestResourceNames() -match '\.ps1$') { throw 'Runtime script resource still embedded' }
 $fixtures = Join-Path $PSScriptRoot ('update-fixtures\' + [Guid]::NewGuid().ToString('N'))
-[void](New-Item -ItemType Directory -Path $fixtures -Force)
-$target = Join-Path $fixtures 'installed.exe'
-$source = Join-Path $fixtures 'download.exe'
+$oldFolder = Join-Path $fixtures 'old'
+$newFolder = Join-Path $fixtures 'new'
+[void](New-Item -ItemType Directory -Path $oldFolder,$newFolder -Force)
+$target = Join-Path $oldFolder 'Panseo.exe'
+$source = Join-Path $newFolder 'Panseo.exe'
 Add-Type -TypeDefinition 'using System.Reflection; [assembly:AssemblyVersion("1.0.0.0")] public class OldApp { public static void Main() {} }' -OutputAssembly $target -OutputType WindowsApplication
 Add-Type -TypeDefinition 'using System.Reflection; [assembly:AssemblyVersion("1.1.0.0")] public class NewApp { public static void Main() {} }' -OutputAssembly $source -OutputType WindowsApplication
 $hash = [string](Get-FileHash -LiteralPath $source -Algorithm SHA256).Hash
@@ -38,20 +41,23 @@ $release.assets[0].digest = $null
 $rejected = $false
 try { [void]$parse.Invoke($null,@([string]($release | ConvertTo-Json -Depth 6),[version]'1.0.0.0')) } catch { $rejected = $true }
 if (-not $rejected) { throw 'Missing SHA-256 accepted' }
-$metadata = Join-Path $fixtures 'release.json'
-$log = Join-Path $fixtures 'update.log'
-[IO.File]::WriteAllText($metadata,$json)
 $oldHash = (Get-FileHash -LiteralPath $target -Algorithm SHA256).Hash
-$powershell = Join-Path $env:WINDIR 'System32\WindowsPowerShell\v1.0\powershell.exe'
-$script = Join-Path $root 'src\Helpers\ApplyUpdate.ps1'
-& $powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $script -ProcessId 0 -SourcePath $source -TargetPath $target -ExpectedHash $hash -MetadataPath $metadata -LogPath $log
-if ($LASTEXITCODE -ne 0 -or (Get-FileHash -LiteralPath $target).Hash -ne $hash -or (Get-FileHash -LiteralPath ($target+'.update-backup')).Hash -ne $oldHash) { throw 'Atomic update/backup failed' }
-Copy-Item -LiteralPath $target -Destination $source
+$install = $updater.GetMethod('InstallVerifiedUpdate', $flags)
+[void]$install.Invoke($null,@([string]$source,[string]$target,$info))
+if ((Get-FileHash -LiteralPath $target).Hash -ne $hash -or (Get-FileHash -LiteralPath ($target+'.update-backup')).Hash -ne $oldHash) { throw 'Native atomic update/backup failed' }
+[void]$install.Invoke($null,@([string]$source,[string]$target,$info))
+if ((Get-FileHash -LiteralPath ($target+'.update-backup')).Hash -ne $oldHash) { throw 'Same-version install altered backup' }
 Copy-Item -LiteralPath ($target+'.update-backup') -Destination $target -Force
-[IO.File]::WriteAllText($metadata,$json)
-& $powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $script -ProcessId 0 -SourcePath $source -TargetPath $target -ExpectedHash ('0'*64) -MetadataPath $metadata -LogPath $log
-if ($LASTEXITCODE -eq 0 -or (Get-FileHash -LiteralPath $target).Hash -ne $oldHash) { throw 'Integrity failure modified installed application' }
-# The released-button race must neither call WPF DragMove nor show an error dialog.
+$info.assets[0].digest = 'sha256:' + ('0'*64)
+$rejected = $false
+try { [void]$install.Invoke($null,@([string]$source,[string]$target,$info)) } catch { $rejected = $true }
+if (-not $rejected -or (Get-FileHash -LiteralPath $target).Hash -ne $oldHash) { throw 'Integrity failure modified installed application' }
+$entry = $updater.GetMethod('ApplyUpdateFromArguments',$flags)
+$entryArgs = [object[]]::new(1)
+$entryArgs[0] = [string[]]@('--apply-update','1',[string]$target)
+$rejected = $false
+try { [void]$entry.Invoke($null,$entryArgs) } catch { $rejected = $true }
+if (-not $rejected) { throw 'Updater accepted execution outside verified update folder' }
 if ([Windows.Input.Mouse]::LeftButton -eq [Windows.Input.MouseButtonState]::Released) {
     $window = [Panseo.Views.FloatingToolbarWindow]::new($null)
     [Panseo.Native.Win32]::TryDragMove($window)
@@ -62,4 +68,4 @@ if ([Windows.Input.Mouse]::LeftButton -eq [Windows.Input.MouseButtonState]::Rele
     [void]$window.GetType().GetMethod('FloatingCircle_MouseMove',$instanceFlags).Invoke($window,$args)
     if ($field.GetValue($window)) { throw 'Released drag state not reset' }
 }
-'PASS: update validation, hash mismatch rejection, atomic replacement/backup, rollback safety, released-button drag guard.'
+'PASS: update validation, native atomic replacement/backup, bad hash rejection, update-entry validation, released-button drag guard.'

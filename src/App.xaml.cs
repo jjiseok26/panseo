@@ -43,6 +43,13 @@ namespace Panseo
         {
             try
             {
+                if (e.Args.Length > 0 && e.Args[0] == "--apply-update")
+                {
+                    base.OnStartup(e);
+                    new UpdateInstallWindow(e.Args).Show();
+                    return;
+                }
+
                 const string appName = "Panseo_ScreenAnnotator_App";
                 bool createdNew;
 

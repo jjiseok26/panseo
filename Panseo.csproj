@@ -83,7 +83,7 @@
     <Compile Include="src\Views\CaptureEditorWindow.cs" />
     <Compile Include="src\Properties\AssemblyInfo.cs" />
     <Compile Include="src\Helpers\AutoUpdater.cs" />
-    <EmbeddedResource Include="src\Helpers\ApplyUpdate.ps1"><LogicalName>Panseo.ApplyUpdate.ps1</LogicalName></EmbeddedResource>
+    <Compile Include="src\Views\UpdateInstallWindow.cs" />
     <Compile Include="src\Helpers\DrawingHelper.cs" />
     <Compile Include="src\Helpers\OverlayWindowManager.cs" />
     <Compile Include="src\Models\AppSettings.cs" />
