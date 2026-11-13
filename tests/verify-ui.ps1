@@ -11,7 +11,7 @@ $card = $window.FindName('MenuCard')
 $card.Measure([Windows.Size]::new($window.Width, $window.Height))
 $card.Arrange([Windows.Rect]::new(0, 0, $window.Width, $window.Height))
 $card.UpdateLayout()
-foreach ($name in 'RbPointerCircle', 'RbToolMouse', 'RbToolEraser', 'BtnSaveScreenshot', 'BtnClearAll', 'BtnPinScreenshot', 'BtnScreenZoom', 'BtnManual', 'ChkBlackboard') {
+foreach ($name in 'RbPointerCircle', 'RbToolMouse', 'RbToolEraser', 'BtnSaveScreenshot', 'BtnClearAll', 'BtnPinScreenshot', 'BtnScreenZoom', 'BtnManual', 'BtnUpdateCheck', 'RbToolNumber', 'BtnResetNumber', 'ChkBlackboard') {
     $control = $window.FindName($name)
     $rect = $control.TransformToAncestor($card).TransformBounds([Windows.Rect]::new(0, 0, $control.ActualWidth, $control.ActualHeight))
     if ($rect.Width -le 0 -or $rect.Height -le 0 -or $rect.Right -gt $card.ActualWidth + 1 -or $rect.Bottom -gt $card.ActualHeight + 1) { throw "Control clipped: $name ($rect)" }
@@ -41,7 +41,7 @@ if ([Panseo.Models.AppSettings]::Instance.PointerShape -ne [Panseo.Models.Pointe
 $selectPointer = $window.GetType().GetMethod('SelectPointerShape', [Reflection.BindingFlags]'Instance,NonPublic')
 [void]$selectPointer.Invoke($window, @([Panseo.Models.PointerShape]::CircleHighlight))
 $shortcut = $window.GetType().GetMethod('HandleDrawingShortcut', [Reflection.BindingFlags]'Instance,NonPublic')
-foreach ($key in 0x50, 0x48, 0x41, 0x52, 0x4F, 0x43, 0x4C, 0x54, 0x45, 0x31, 0x36, 0x2E) {
+foreach ($key in 0x50, 0x48, 0x41, 0x52, 0x4F, 0x43, 0x4C, 0x54, 0x45, 0x31, 0x36, 0x2E, 0x4E) {
     if ($shortcut.Invoke($window, @([int]$key))) { throw "Unmodified key intercepted: $key" }
 }
 # Verify that the entire menu also fits a small viewport without scrolling.

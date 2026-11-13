@@ -25,6 +25,7 @@ namespace Panseo.Views
         private UIElement _preview;
         private TextBox _textEditor;
         private bool _drawing;
+        private int _nextNumber = 1;
 
         public CaptureEditorWindow(BitmapSource image)
         {
@@ -48,6 +49,8 @@ namespace Panseo.Views
             AddTool(tools, "원 Ctrl+O", DrawingTool.Ellipse);
             AddTool(tools, "화살표 Ctrl+A", DrawingTool.Arrow);
             AddTool(tools, "글자 Ctrl+T", DrawingTool.Text);
+            AddTool(tools, "번호 Ctrl+N", DrawingTool.Number);
+            AddButton(tools, "번호 1부터", () => _nextNumber = 1);
             AddButton(tools, "되돌리기 Ctrl+Z", Undo);
             AddButton(tools, "다시 실행 Ctrl+Y", Redo);
             AddButton(tools, "저장 Ctrl+F10", SaveCapture);
@@ -107,6 +110,7 @@ namespace Panseo.Views
             _start = e.GetPosition(_canvas);
             if (_tool == DrawingTool.None) { Win32.TryDragMove(this); return; }
             if (_tool == DrawingTool.Text) { BeginText(_start); e.Handled = true; return; }
+            if (_tool == DrawingTool.Number) { StampNumber(_start); e.Handled = true; return; }
             _drawing = true;
             _preview = CreateShape(_tool, _start, _start);
             _canvas.Children.Add(_preview);
@@ -128,6 +132,12 @@ namespace Panseo.Views
                 _preview = CreateShape(_tool, _start, point);
                 _canvas.Children.Add(_preview);
             }
+        }
+
+        private void StampNumber(Point point)
+        {
+            _canvas.Children.Add(DrawingHelper.CreateNumberStamp(_nextNumber++, point, AppSettings.Instance.DrawingColor, AppSettings.Instance.StrokeThickness));
+            _redo.Clear();
         }
 
         private UIElement CreateShape(DrawingTool tool, Point start, Point end)
@@ -224,9 +234,10 @@ namespace Panseo.Views
                 case Key.O: SelectTool(DrawingTool.Ellipse); break;
                 case Key.A: SelectTool(DrawingTool.Arrow); break;
                 case Key.T: SelectTool(DrawingTool.Text); break;
+                case Key.N: SelectTool(DrawingTool.Number); break;
                 case Key.F10: SaveCapture(); break;
                 case Key.F11: PinCapture(); break;
-                case Key.Delete: CommitText(false); _canvas.Children.Clear(); _redo.Clear(); break;
+                case Key.Delete: CommitText(false); _canvas.Children.Clear(); _redo.Clear(); _nextNumber = 1; break;
                 default: return;
             }
             e.Handled = true;

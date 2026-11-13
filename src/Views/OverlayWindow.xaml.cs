@@ -401,6 +401,13 @@ namespace Panseo.Views
 
             Point pos = e.GetPosition(DrawingCanvas);
 
+            if (AppSettings.Instance.CurrentTool == DrawingTool.Number)
+            {
+                StampNumber(pos);
+                e.Handled = true;
+                return;
+            }
+
             if (AppSettings.Instance.CurrentTool == DrawingTool.Text)
             {
                 if (TextEditorBox.Visibility == Visibility.Visible)
@@ -561,6 +568,12 @@ namespace Panseo.Views
                     };
             }
             return null;
+        }
+
+        private void StampNumber(Point point)
+        {
+            var settings = AppSettings.Instance;
+            AddDrawingElement(DrawingHelper.CreateNumberStamp(settings.TakeNextNumber(), point, settings.DrawingColor, settings.StrokeThickness));
         }
 
         private void AddDrawingElement(UIElement element)

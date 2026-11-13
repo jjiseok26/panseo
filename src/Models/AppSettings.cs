@@ -33,6 +33,10 @@ namespace Panseo.Models
         private double _fontSize = 22.0;
         private bool _isBlackboardActive = false;
         private bool _isTextEditing = false;
+        private int _nextNumber = 1;
+
+        public int TakeNextNumber() { return _nextNumber++; }
+        public void ResetNumbering() { _nextNumber = 1; }
 
         public bool IsTextEditing
         {

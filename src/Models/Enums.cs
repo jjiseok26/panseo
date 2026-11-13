@@ -21,6 +21,7 @@ namespace Panseo.Models
         Ellipse,     // 원/타원
         Line,        // 직선
         Text,        // 텍스트 입력
-        Eraser       // 지우개
+        Eraser,      // 지우개
+        Number       // 클릭할 때마다 순서대로 번호 넣기
     }
 }

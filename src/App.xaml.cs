@@ -83,7 +83,7 @@ namespace Panseo
             }
         }
 
-        private async void CheckForUpdates(bool manual)
+        public async void CheckForUpdates(bool manual)
         {
             if (_updater == null) return;
             try

@@ -1,5 +1,6 @@
 using System;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Shapes;
 
@@ -7,6 +8,28 @@ namespace Panseo.Helpers
 {
     public static class DrawingHelper
     {
+        public static FrameworkElement CreateNumberStamp(int number, Point center, Color color, double thickness)
+        {
+            double diameter = Math.Max(32, thickness * 8);
+            var foreground = (0.299 * color.R + 0.587 * color.G + 0.114 * color.B) > 170 ? Brushes.Black : Brushes.White;
+            var marker = new Grid { Width = diameter, Height = diameter, IsHitTestVisible = false, Tag = number };
+            marker.Children.Add(new Ellipse
+            {
+                Fill = new SolidColorBrush(Color.FromRgb(color.R, color.G, color.B)),
+                Stroke = foreground, StrokeThickness = 1.5
+            });
+            marker.Children.Add(new Viewbox
+            {
+                Margin = new Thickness(5), StretchDirection = StretchDirection.DownOnly,
+                Child = new TextBlock { Text = number.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                    FontFamily = new FontFamily("Segoe UI"), FontSize = diameter * 0.55,
+                    FontWeight = FontWeights.Bold, Foreground = foreground }
+            });
+            Canvas.SetLeft(marker, center.X - diameter / 2);
+            Canvas.SetTop(marker, center.Y - diameter / 2);
+            return marker;
+        }
+
         /// <summary>
         /// 시작점(start)에서 끝점(end)을 향하는 화살표 형태의 Path를 생성합니다.
         /// </summary>

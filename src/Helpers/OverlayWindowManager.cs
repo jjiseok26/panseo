@@ -74,6 +74,7 @@ namespace Panseo.Helpers
             {
                 _overlayWindows[i].ClearAll();
             }
+            Panseo.Models.AppSettings.Instance.ResetNumbering();
         }
 
         private void CloseAllOverlays()

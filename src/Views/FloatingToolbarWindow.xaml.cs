@@ -289,6 +289,12 @@ namespace Panseo.Views
                 return true;
             }
 
+            if (vk == 0x4E) // Ctrl+N: 번호 넣기
+            {
+                Dispatcher.BeginInvoke((Action)(() => SelectTool(DrawingTool.Number)));
+                return true;
+            }
+
             // 도구 단축키 (Ctrl + 영문 알파벳 키)
             if (vk == 0x50) // P: 일반 펜 (Pen)
             {
@@ -427,6 +433,7 @@ namespace Panseo.Views
                 case DrawingTool.Line: icon = "➖"; break;
                 case DrawingTool.Text: icon = "🔤"; break;
                 case DrawingTool.Eraser: icon = "🧽"; break;
+                case DrawingTool.Number: icon = "①"; break;
                 default: icon = "판서"; break;
             }
             TxtCircleToolIcon.Text = icon;
@@ -459,6 +466,7 @@ namespace Panseo.Views
                 case DrawingTool.Line: RbToolLine.IsChecked = true; break;
                 case DrawingTool.Text: RbToolText.IsChecked = true; break;
                 case DrawingTool.Eraser: RbToolEraser.IsChecked = true; break;
+                case DrawingTool.Number: RbToolNumber.IsChecked = true; break;
             }
         }
 
@@ -704,7 +712,8 @@ namespace Panseo.Views
 
         private void DrawingTool_Click(object sender, RoutedEventArgs e)
         {
-            if (RbToolMouse.IsChecked == true)
+            if (RbToolNumber.IsChecked == true) { SelectTool(DrawingTool.Number); }
+            else if (RbToolMouse.IsChecked == true)
             {
                 SelectTool(DrawingTool.None);
             }
@@ -752,19 +761,7 @@ namespace Panseo.Views
             }
             else
             {
-                // 마우스 모드 -> 직전 판서 도구로
-                AppSettings.Instance.CurrentTool = _lastActiveDrawingTool != DrawingTool.None ? _lastActiveDrawingTool : DrawingTool.Pen;
-                switch (_lastActiveDrawingTool)
-                {
-                    case DrawingTool.Pen: RbToolPen.IsChecked = true; break;
-                    case DrawingTool.Highlighter: RbToolHighlighter.IsChecked = true; break;
-                    case DrawingTool.Arrow: RbToolArrow.IsChecked = true; break;
-                    case DrawingTool.Rectangle: RbToolRectangle.IsChecked = true; break;
-                    case DrawingTool.Ellipse: RbToolEllipse.IsChecked = true; break;
-                    case DrawingTool.Line: RbToolLine.IsChecked = true; break;
-                    case DrawingTool.Text: RbToolText.IsChecked = true; break;
-                    default: RbToolPen.IsChecked = true; break;
-                }
+                SelectTool(_lastActiveDrawingTool != DrawingTool.None ? _lastActiveDrawingTool : DrawingTool.Pen);
             }
         }
 
@@ -835,6 +832,13 @@ namespace Panseo.Views
                 _manualWindow.Show();
             }
             else { _manualWindow.WindowState = WindowState.Normal; _manualWindow.Activate(); }
+        }
+
+        private void BtnResetNumber_Click(object sender, RoutedEventArgs e) { AppSettings.Instance.ResetNumbering(); }
+        private void BtnUpdateCheck_Click(object sender, RoutedEventArgs e)
+        {
+            var app = Application.Current as App;
+            if (app != null) app.CheckForUpdates(true);
         }
 
         private void BtnManual_Click(object sender, RoutedEventArgs e) { ShowManual(); }

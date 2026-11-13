@@ -139,7 +139,7 @@
 ## 🚀 포터블 실행 방법
 
 설치가 전혀 필요 없으며, 아래 파일 중 하나를 더블 클릭하여 실행하시면 됩니다:
-- [**Panseo_포터블.exe**](https://github.com/jjiseok26/panseo/releases/latest/download/Panseo-portable.exe) 또는 [**Panseo.exe**](https://github.com/jjiseok26/panseo/releases/latest/download/Panseo.exe)
+- [**panseo_portable.exe**](https://github.com/jjiseok26/panseo/releases/latest/download/panseo_portable.exe) 또는 [**Panseo.exe**](https://github.com/jjiseok26/panseo/releases/latest/download/Panseo.exe)
 - **Panseo_실행.bat** (소스 폴더에서 실행)
 
 
@@ -161,3 +161,12 @@
 - **고정 캡처** 위에서도 휠로 확대/축소합니다. Ctrl+드래그는 이미지 안에서 이동, 일반 드래그는 창 전체 이동입니다. 더블클릭 또는 0으로 초기화합니다. 저장은 배율과 관계없이 전체 원본 이미지를 저장합니다.
 - 메뉴와 트레이의 **사용 설명서**에서 인터넷 없이 모든 사용법과 단축키를 볼 수 있습니다. [설명서 원문](docs/Manual.txt)
 - 트레이의 **판서** 아이콘은 실행 파일 안에 내장되어 있어 외부 아이콘 파일이 필요하지 않습니다.
+
+
+## 클릭으로 번호 넣기
+
+- **① 번호 (Ctrl+N)** 도구를 선택하고 화면을 클릭할 때마다 동그라미 안에 1, 2, 3…이 표시됩니다. 색상과 굵기 설정을 사용하며 되돌리기·다시 실행·지우개를 적용할 수 있습니다.
+- **번호 1부터**는 기존 표시를 남기고 다음 번호를 1로 되돌립니다. 전체 지우기도 번호를 초기화합니다. 번호는 도구를 바꾸거나 모니터를 옮겨도 이어집니다. 되돌리기로 표시를 제거해도 다음 번호는 유지됩니다.
+- 캡처 편집 창에서도 **번호** 도구를 사용할 수 있으며 각 편집 창은 1부터 시작합니다.
+- **업데이트**와 **설명서** 버튼은 제목표시줄에서 최소화 버튼 왼쪽에 있습니다.
+- 플로팅 동그라미의 검은 그림자 효과를 제거했습니다. 배포 파일명은 **panseo_portable.exe**입니다.
