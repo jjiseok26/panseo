@@ -12,31 +12,38 @@ namespace Panseo.Views
         private readonly BitmapSource _source;
         private readonly ScaleTransform _scale = new ScaleTransform();
         private readonly TranslateTransform _offset = new TranslateTransform();
-        private readonly bool _leftDragPans;
+        private readonly bool _hasDrawingSurface;
+        public bool LeftDragPans { get; set; }
         private double _fit = 1;
         private bool _panning;
         private Point _last;
         public event EventHandler ZoomChanged;
         public double ZoomRatio { get { return _scale.ScaleX / _fit; } }
 
-        public ZoomImageView(BitmapSource source, bool leftDragPans)
+        public ZoomImageView(BitmapSource source, bool leftDragPans) : this(source, leftDragPans, null) { }
+
+        internal ZoomImageView(BitmapSource source, bool leftDragPans, Canvas drawingSurface)
         {
             _source = source;
-            _leftDragPans = leftDragPans;
+            LeftDragPans = leftDragPans;
+            _hasDrawingSurface = drawingSurface != null;
             ClipToBounds = true;
             Background = Brushes.Black;
             var transforms = new TransformGroup();
             transforms.Children.Add(_scale);
             transforms.Children.Add(_offset);
-            Children.Add(new Image { Source = source, Width = source.PixelWidth, Height = source.PixelHeight,
-                Stretch = Stretch.Fill, HorizontalAlignment = HorizontalAlignment.Left,
-                VerticalAlignment = VerticalAlignment.Top, RenderTransform = transforms });
+            FrameworkElement surface = drawingSurface ?? (FrameworkElement)new Image { Source = source, Width = source.PixelWidth, Height = source.PixelHeight, Stretch = Stretch.Fill };
+            surface.HorizontalAlignment = HorizontalAlignment.Left;
+            surface.VerticalAlignment = VerticalAlignment.Top;
+            surface.RenderTransform = transforms;
+            Children.Add(surface);
             SizeChanged += (s, e) => Reset();
             PreviewMouseWheel += (s, e) => { ZoomAt(Math.Pow(1.2, e.Delta / 120.0), e.GetPosition(this)); e.Handled = true; };
             PreviewMouseLeftButtonDown += (s, e) =>
             {
-                if (e.ClickCount == 2) { Reset(); e.Handled = true; return; }
-                if (!_leftDragPans && (Keyboard.Modifiers & ModifierKeys.Control) == 0) return;
+                bool control = (Keyboard.Modifiers & ModifierKeys.Control) != 0;
+                if (e.ClickCount == 2 && (!_hasDrawingSurface || LeftDragPans || control)) { Reset(); e.Handled = true; return; }
+                if (!LeftDragPans && !control) return;
                 _last = e.GetPosition(this);
                 _panning = true;
                 CaptureMouse();

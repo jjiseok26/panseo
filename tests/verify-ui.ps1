@@ -44,6 +44,7 @@ $shortcut = $window.GetType().GetMethod('HandleDrawingShortcut', [Reflection.Bin
 foreach ($key in 0x50, 0x48, 0x41, 0x52, 0x4F, 0x43, 0x4C, 0x54, 0x45, 0x31, 0x36, 0x2E, 0x4E) {
     if ($shortcut.Invoke($window, @([int]$key))) { throw "Unmodified key intercepted: $key" }
 }
+if ((Get-Content (Join-Path $root 'src\Views\FloatingToolbarWindow.xaml.cs') -Raw) -match 'vk\s*==\s*0x43') { throw 'Ctrl+C must remain available for Copy' }
 # Verify that the entire menu also fits a small viewport without scrolling.
 foreach ($size in @(@(320, 480), @(350, 600))) {
     $card.Measure([Windows.Size]::new($size[0], $size[1]))

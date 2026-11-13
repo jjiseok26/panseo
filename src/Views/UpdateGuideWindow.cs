@@ -10,6 +10,8 @@ namespace Panseo.Views
     public sealed class UpdateGuideWindow : Window
     {
         private readonly TextBlock _status;
+        private readonly Button _update;
+        public event Action UpdateRequested;
 
         public UpdateGuideWindow(string status)
         {
@@ -28,16 +30,25 @@ namespace Panseo.Views
             heading.Children.Add(_status);
             DockPanel.SetDock(heading, Dock.Top);
             root.Children.Add(heading);
-            var close = new Button { Content = "닫기", Padding = new Thickness(20, 6, 20, 6), HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(6, 10, 6, 0) };
+            var actions = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right };
+            _update = new Button { Content = "업데이트", IsEnabled = false, Padding = new Thickness(20, 6, 20, 6), Margin = new Thickness(6, 10, 6, 0) };
+            _update.Click += (s, e) => { if (UpdateRequested != null) UpdateRequested(); };
+            actions.Children.Add(_update);
+            var close = new Button { Content = "닫기", Padding = new Thickness(20, 6, 20, 6), Margin = new Thickness(6, 10, 6, 0) };
             close.Click += (s, e) => Close();
-            DockPanel.SetDock(close, Dock.Bottom);
-            root.Children.Add(close);
+            actions.Children.Add(close);
+            DockPanel.SetDock(actions, Dock.Bottom);
+            root.Children.Add(actions);
             root.Children.Add(new ScrollViewer { Content = CreateIllustratedGuide(), VerticalScrollBarVisibility = ScrollBarVisibility.Auto });
             Content = root;
             SetStatus(status);
         }
 
-        public void SetStatus(string status) { _status.Text = status; }
+        public void SetStatus(string status)
+        {
+            _status.Text = status;
+            _update.IsEnabled = status != null && status.StartsWith("새 버전", StringComparison.Ordinal);
+        }
 
         internal static StackPanel CreateIllustratedGuide()
         {
@@ -47,9 +58,9 @@ namespace Panseo.Views
             var zoom = Picture();
             Box(zoom, 12, 32, 58, 40, "100%", Brushes.LightSteelBlue);
             Label(zoom, 84, 40, "휠 →", 16);
-            Box(zoom, 150, 12, 98, 78, "200%", Brushes.LightSkyBlue);
+            Box(zoom, 150, 12, 98, 78, "✏ 200%", Brushes.LightSkyBlue);
             cards.Children.Add(Card("Ctrl+Q · 화면 확대/축소", zoom,
-                "Ctrl+Q로 들어간 뒤 휠을 위로 굴리면 확대, 아래로 굴리면 축소합니다. 드래그로 살펴보고 Esc로 나옵니다. 진입 순간의 정지 화면입니다."));
+                "Ctrl+Q로 들어가 휠로 확대/축소합니다. 펜·도형·글자·번호 도구로 확대 화면에 그릴 수 있습니다. 그리면서 Ctrl+드래그로 이동하고, 저장·고정 후 Esc로 닫으세요. 진입 순간의 정지 화면입니다."));
             var numbers = Picture();
             Label(numbers, 12, 2, "시작번호", 12);
             Box(numbers, 82, 0, 52, 25, "5", Brushes.AliceBlue);
@@ -70,10 +81,10 @@ namespace Panseo.Views
             Label(menu, 88, 37, "→", 20);
             Box(menu, 124, 14, 128, 70, "업데이트 설치 창", Brushes.AliceBlue);
             cards.Children.Add(Card("일반 실행 파일로 업데이트", menu,
-                "PowerShell 명령 대신 검증한 실행 파일을 디스크에서 실행합니다. 설치 창에서 진행 상황을 보여주며 보안 제품 설정은 바꾸지 않습니다."));
+                "새 버전이 준비되면 아래 업데이트 버튼을 누르세요. 검증한 실행 파일로 설치하고 프로그램을 다시 엽니다. 보안 제품 설정은 바꾸지 않습니다."));
             panel.Children.Add(cards);
             panel.Children.Add(new Border { Background = Brushes.White, CornerRadius = new CornerRadius(10), Padding = new Thickness(16), Margin = new Thickness(6),
-                Child = new TextBlock { Text = "업데이트 적용 순서\n확인 → 자동 다운로드·검증 → 트레이에서 프로그램 종료 → 다시 실행\n\n메뉴를 접는 것은 종료가 아닙니다. 현재 작업은 강제로 닫지 않으며 다음 실행부터 새 버전이 적용됩니다.",
+                Child = new TextBlock { Text = "업데이트 적용 순서\n업데이트 확인 → 자동 다운로드·검증 → 아래 ‘업데이트’ 버튼 → 설치 후 자동 재실행\n\n그리는 중인 내용은 업데이트 전에 저장해 주세요. 최신 버전이면 업데이트 버튼이 비활성화됩니다.",
                     TextWrapping = TextWrapping.Wrap, FontSize = 14, LineHeight = 23 } });
             return panel;
         }

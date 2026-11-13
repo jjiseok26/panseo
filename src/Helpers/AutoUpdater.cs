@@ -99,7 +99,7 @@ namespace Panseo.Helpers
             catch (BadImageFormatException) { return false; }
         }
 
-        public void ApplyOnExit()
+        public void ApplyOnExit(bool restart = false)
         {
             try
             {
@@ -110,7 +110,7 @@ namespace Panseo.Helpers
                 if (release == null || !VerifyFile(staged, release)) return;
                 // Run the verified on-disk application in its visible update-install mode.
                 var info = new ProcessStartInfo(staged,
-                    "--apply-update " + Process.GetCurrentProcess().Id + " " + QuoteExecutablePath(_target))
+                    "--apply-update " + Process.GetCurrentProcess().Id + " " + QuoteExecutablePath(_target) + (restart ? " --restart" : ""))
                 { UseShellExecute = false, WorkingDirectory = _folder, WindowStyle = ProcessWindowStyle.Normal };
                 using (Process.Start(info)) { }
             }
@@ -127,7 +127,7 @@ namespace Panseo.Helpers
         internal static void ApplyUpdateFromArguments(string[] args)
         {
             int processId;
-            if (args.Length != 3 || args[0] != "--apply-update" || !int.TryParse(args[1], out processId) ||
+            if ((args.Length != 3 && (args.Length != 4 || args[3] != "--restart")) || args[0] != "--apply-update" || !int.TryParse(args[1], out processId) ||
                 processId <= 0 || processId == Process.GetCurrentProcess().Id)
                 throw new ArgumentException("Invalid update arguments.");
             var updater = new AutoUpdater(args[2]);
@@ -152,6 +152,8 @@ namespace Panseo.Helpers
                 InstallVerifiedUpdate(staged, updater._target, release);
                 File.Delete(metadata);
                 updater.WriteLog("Updated to " + release.tag_name);
+                if (args.Length == 4)
+                    using (Process.Start(new ProcessStartInfo(updater._target) { UseShellExecute = false, WorkingDirectory = Path.GetDirectoryName(updater._target) })) { }
             }
             catch (Exception ex) { updater.Log(ex); throw; }
         }

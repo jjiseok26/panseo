@@ -19,9 +19,21 @@ $encoder.Frames.Add([Windows.Media.Imaging.BitmapFrame]::Create($bitmap))
 $stream = [IO.File]::Create((Join-Path $PSScriptRoot 'update-guide.png'))
 try { $encoder.Save($stream) } finally { $stream.Dispose() }
 $window = [Panseo.Views.UpdateGuideWindow]::new('Checking')
+$update = $type.GetField('_update',[Reflection.BindingFlags]'Instance,NonPublic').GetValue($window)
+if ($update.IsEnabled) { throw 'Update was enabled before download verification' }
+$actions = $window.Content.Children[1]
+if ($actions.Children[0] -ne $update -or $actions.Children[1] -isnot [Windows.Controls.Button]) { throw 'Update button must precede Close' }
+$script:updateClicked = $false
+$window.add_UpdateRequested([Action]{ $script:updateClicked = $true })
+$ready = [string][char]0xC0C8 + ' ' + [char]0xBC84 + [char]0xC804 + ' v1.0.9'
+$window.SetStatus($ready)
+if (-not $update.IsEnabled) { throw 'Verified update action not enabled' }
+$click = [Windows.RoutedEventArgs]::new([Windows.Controls.Primitives.ButtonBase]::ClickEvent)
+$update.RaiseEvent($click)
+if (-not $script:updateClicked) { throw 'Update button did not invoke installer action' }
 $window.SetStatus('Download complete')
 $status = $type.GetField('_status',[Reflection.BindingFlags]'Instance,NonPublic').GetValue($window)
-if ($status.Text -ne 'Download complete') { throw 'Update status failed' }
+if ($status.Text -ne 'Download complete' -or $update.IsEnabled) { throw 'Update status failed' }
 $toolbar = [Panseo.Views.FloatingToolbarWindow]::new($null)
 if (-not $toolbar.FindName('TxtCircleToolIcon').Text.Contains(([char]0x270F).ToString())) { throw 'Pencil icon not restored' }
 if (-not $toolbar.FindName('BtnScreenZoom').Content.Contains('Ctrl+Q')) { throw 'Toolbar zoom shortcut incorrect' }

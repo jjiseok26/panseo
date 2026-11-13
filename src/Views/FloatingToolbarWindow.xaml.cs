@@ -171,10 +171,9 @@ namespace Panseo.Views
                 if (_isCapturing) { handled = true; return IntPtr.Zero; }
                 int id = wParam.ToInt32();
                 if (id == HOTKEY_ID_ZOOM) { ToggleScreenZoom(); handled = true; return IntPtr.Zero; }
-                if (_zoomWindow != null) _zoomWindow.Close();
                 if (id == HOTKEY_ID_CAPTURE || id == HOTKEY_ID_PIN)
                 {
-                    var editor = GetActiveCaptureEditor();
+                    var editor = _zoomWindow != null ? (CaptureEditorWindow)_zoomWindow : GetActiveCaptureEditor();
                     if (editor != null)
                     {
                         if (id == HOTKEY_ID_CAPTURE) editor.SaveCapture();
@@ -185,7 +184,7 @@ namespace Panseo.Views
                 }
                 else if (id == HOTKEY_ID_MOUSE)
                 {
-                    var editor = GetActiveCaptureEditor();
+                    var editor = _zoomWindow != null ? (CaptureEditorWindow)_zoomWindow : GetActiveCaptureEditor();
                     if (editor != null) editor.SelectTool(DrawingTool.None);
                     SelectTool(DrawingTool.None);
                     handled = true;
@@ -316,7 +315,7 @@ namespace Panseo.Views
                 Dispatcher.BeginInvoke((Action)(() => SelectTool(DrawingTool.Rectangle)));
                 return true;
             }
-            if (vk == 0x4F || vk == 0x43) // O 또는 C: 원/타원 (Oval / Circle)
+            if (vk == 0x4F) // O: 원/타원 (Oval)
             {
                 Dispatcher.BeginInvoke((Action)(() => SelectTool(DrawingTool.Ellipse)));
                 return true;
@@ -380,6 +379,14 @@ namespace Panseo.Views
 
         public void SelectTool(DrawingTool tool)
         {
+            if (_zoomWindow != null)
+            {
+                _zoomWindow.SelectTool(tool);
+                if (tool != DrawingTool.None) _lastActiveDrawingTool = tool;
+                UpdateToolRadioButtons(tool);
+                UpdateCircleVisual();
+                return;
+            }
             AppSettings.Instance.CurrentTool = tool;
             if (tool != DrawingTool.None)
             {
@@ -391,6 +398,7 @@ namespace Panseo.Views
         public void SetDrawingColor(Color color)
         {
             AppSettings.Instance.DrawingColor = color;
+            if (_zoomWindow != null) return;
             if (AppSettings.Instance.CurrentTool == DrawingTool.None)
             {
                 SelectTool(_lastActiveDrawingTool != DrawingTool.None ? _lastActiveDrawingTool : DrawingTool.Pen);
@@ -421,7 +429,7 @@ namespace Panseo.Views
         {
             if (TxtCircleToolIcon == null || FloatingCircle == null) return;
 
-            var tool = AppSettings.Instance.CurrentTool;
+            var tool = _zoomWindow != null ? _zoomWindow.CurrentTool : AppSettings.Instance.CurrentTool;
             string icon;
             switch (tool)
             {
@@ -753,6 +761,7 @@ namespace Panseo.Views
 
         public void ToggleDrawingMode()
         {
+            if (_zoomWindow != null) { _zoomWindow.ToggleDrawingMode(); return; }
             if (AppSettings.Instance.CurrentTool != DrawingTool.None)
             {
                 // 판서 해제 -> 마우스 모드로
@@ -800,17 +809,20 @@ namespace Panseo.Views
 
         private void BtnUndo_Click(object sender, RoutedEventArgs e)
         {
-            if (_overlayManager != null) _overlayManager.Undo();
+            if (_zoomWindow != null) _zoomWindow.Undo();
+            else if (_overlayManager != null) _overlayManager.Undo();
         }
 
         private void BtnRedo_Click(object sender, RoutedEventArgs e)
         {
-            if (_overlayManager != null) _overlayManager.Redo();
+            if (_zoomWindow != null) _zoomWindow.Redo();
+            else if (_overlayManager != null) _overlayManager.Redo();
         }
 
         private void BtnClearAll_Click(object sender, RoutedEventArgs e)
         {
-            if (_overlayManager != null) _overlayManager.ClearAll();
+            if (_zoomWindow != null) _zoomWindow.ClearAll();
+            else if (_overlayManager != null) _overlayManager.ClearAll();
             TxtStartNumber.Text = "1";
             TxtNumberStatus.Text = "입력 후 적용 또는 Enter";
             TxtNumberStatus.Foreground = (Brush)FindResource("TextSecondaryBrush");
@@ -818,12 +830,14 @@ namespace Panseo.Views
 
         private void BtnSaveScreenshot_Click(object sender, RoutedEventArgs e)
         {
-            StartCapture(false);
+            if (_zoomWindow != null) _zoomWindow.SaveCapture();
+            else StartCapture(false);
         }
 
         private void BtnPinScreenshot_Click(object sender, RoutedEventArgs e)
         {
-            StartCapture(true);
+            if (_zoomWindow != null) _zoomWindow.PinCapture();
+            else StartCapture(true);
         }
 
         public void ShowManual()
@@ -840,6 +854,7 @@ namespace Panseo.Views
         private void BtnResetNumber_Click(object sender, RoutedEventArgs e)
         {
             AppSettings.Instance.ResetNumbering();
+            if (_zoomWindow != null) _zoomWindow.ResetNumbering();
             TxtStartNumber.Text = "1";
             TxtNumberStatus.Text = "다음 클릭부터 1번으로 시작합니다.";
             TxtNumberStatus.Foreground = Brushes.LightGreen;
@@ -856,7 +871,8 @@ namespace Panseo.Views
                 TxtStartNumber.SelectAll();
                 return;
             }
-            AppSettings.Instance.SetStartNumber(number);
+            if (_zoomWindow != null) _zoomWindow.SetStartNumber(number);
+            else AppSettings.Instance.SetStartNumber(number);
             SelectTool(DrawingTool.Number);
             TxtNumberStatus.Text = "다음 클릭부터 " + number + "번으로 시작합니다.";
             TxtNumberStatus.Foreground = Brushes.LightGreen;
@@ -894,7 +910,12 @@ namespace Panseo.Views
                 await Task.Delay(350); // Allow existing click ripples to finish before freezing the screen.
                 var bounds = System.Windows.Forms.Screen.FromPoint(System.Windows.Forms.Cursor.Position).Bounds;
                 _zoomWindow = new ScreenZoomWindow(ScreenCapture.Take(bounds), bounds);
-                _zoomWindow.Closed += (s, e) => _zoomWindow = null;
+                _zoomWindow.Closed += (s, e) =>
+                {
+                    _zoomWindow = null;
+                    UpdateToolRadioButtons(AppSettings.Instance.CurrentTool);
+                    UpdateCircleVisual();
+                };
                 _zoomWindow.Show();
             }
             catch (Exception ex)

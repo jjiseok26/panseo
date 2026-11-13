@@ -18,6 +18,7 @@ namespace Panseo
         private NotifyIcon _trayIcon;
         private Icon _applicationIcon;
         private AutoUpdater _updater;
+        private bool _restartAfterUpdate;
         private UpdateGuideWindow _updateGuideWindow;
         private string _lastUpdateStatus = "업데이트 확인 버튼을 눌러 새 버전을 확인하세요.";
         public static bool IsUpdateGuideActive
@@ -122,6 +123,11 @@ namespace Panseo
             if (_updateGuideWindow == null)
             {
                 _updateGuideWindow = new UpdateGuideWindow(status);
+                _updateGuideWindow.UpdateRequested += () =>
+                {
+                    _restartAfterUpdate = true;
+                    Shutdown();
+                };
                 _updateGuideWindow.Closed += (s, e) => _updateGuideWindow = null;
                 _updateGuideWindow.Show();
             }
@@ -259,7 +265,7 @@ namespace Panseo
             }
 
             if (_updateTimer != null) _updateTimer.Stop();
-            if (_updater != null) _updater.ApplyOnExit();
+            if (_updater != null) _updater.ApplyOnExit(_restartAfterUpdate);
             base.OnExit(e);
         }
     }

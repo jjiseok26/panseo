@@ -50,5 +50,5 @@ try {
 }
 finally { $icon.Dispose() }
 $screen = [Panseo.Views.ScreenZoomWindow]::new($image,[Drawing.Rectangle]::new(0,0,320,200))
-if (-not $screen.Topmost -or $screen.Content.Children[0] -isnot [Panseo.Views.ZoomImageView]) { throw 'Screen zoom window invalid' }
+if (-not $screen.Topmost -or $screen.ZoomView -isnot [Panseo.Views.ZoomImageView]) { throw 'Screen zoom window invalid' }
 'PASS: wheel zoom, cursor anchor, scale/pan bounds, reset, pinned zoom, offline manual, embedded tray icon.'
