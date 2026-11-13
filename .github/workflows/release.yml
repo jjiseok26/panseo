@@ -1,0 +1,32 @@
+name: Build and release Panseo
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: panseo-release
+  cancel-in-progress: false
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - uses: microsoft/setup-msbuild@v3
+      - name: Build and verify
+        shell: pwsh
+        run: ./scripts/Build-Release.ps1 -Version "1.0.$env:GITHUB_RUN_NUMBER"
+      - name: Publish verified release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $tag = "v1.0.$env:GITHUB_RUN_NUMBER"
+          $notes = "Panseo $tag`n`n자동 빌드 및 검사 완료. 새 버전은 프로그램 실행 중 자동으로 내려받고, 종료 시 교체되어 다음 실행부터 적용됩니다."
+          [IO.File]::WriteAllText('dist/release-notes.md', $notes, [Text.UTF8Encoding]::new($true))
+          gh release create $tag dist/Panseo.exe dist/Panseo_포터블.exe dist/Panseo-portable.zip --repo $env:GITHUB_REPOSITORY --target $env:GITHUB_SHA --title "Panseo $tag" --notes-file dist/release-notes.md --latest
+          if ($LASTEXITCODE -ne 0) { throw 'Release publication failed' }

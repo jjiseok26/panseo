@@ -1,0 +1,330 @@
+﻿<Window x:Class="Panseo.Views.FloatingToolbarWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Panseo"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        Topmost="True"
+        ShowInTaskbar="False"
+        ResizeMode="NoResize"
+        WindowStartupLocation="Manual">
+
+    <Window.Resources>
+        <!-- 모던 테마 브러시 -->
+        <SolidColorBrush x:Key="CardBgBrush" Color="#F21A1A26" />
+        <SolidColorBrush x:Key="ItemBgBrush" Color="#18FFFFFF" />
+        <SolidColorBrush x:Key="BorderBrush" Color="#30FFFFFF" />
+        <SolidColorBrush x:Key="TextPrimaryBrush" Color="#FFFFFFFF" />
+        <SolidColorBrush x:Key="TextSecondaryBrush" Color="#A8B2C1" />
+        <SolidColorBrush x:Key="AccentBrush" Color="#4F46E5" />
+        <SolidColorBrush x:Key="AccentHoverBrush" Color="#6366F1" />
+        <SolidColorBrush x:Key="ButtonHoverBrush" Color="#28FFFFFF" />
+
+        <!-- 툴 버튼 스타일 -->
+        <Style x:Key="SidebarButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="{StaticResource ItemBgBrush}" />
+            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="BorderBrush" Value="#25FFFFFF" />
+            <Setter Property="Padding" Value="6,4" />
+            <Setter Property="Margin" Value="2" />
+            <Setter Property="Height" Value="30" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="FontFamily" Value="Malgun Gothic, Segoe UI" />
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border" Background="{TemplateBinding Background}" 
+                                BorderBrush="{TemplateBinding BorderBrush}" 
+                                BorderThickness="{TemplateBinding BorderThickness}" 
+                                CornerRadius="6">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" Margin="{TemplateBinding Padding}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="{StaticResource ButtonHoverBrush}" />
+                                <Setter TargetName="border" Property="BorderBrush" Value="#60FFFFFF" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="{StaticResource AccentBrush}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- 토글형 도구 버튼 스타일 -->
+        <Style x:Key="SidebarToggleButtonStyle" TargetType="RadioButton">
+            <Setter Property="Background" Value="{StaticResource ItemBgBrush}" />
+            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="BorderBrush" Value="#25FFFFFF" />
+            <Setter Property="Padding" Value="6,4" />
+            <Setter Property="Margin" Value="2" />
+            <Setter Property="Height" Value="30" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="FontFamily" Value="Malgun Gothic, Segoe UI" />
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RadioButton">
+                        <Border x:Name="border" Background="{TemplateBinding Background}" 
+                                BorderBrush="{TemplateBinding BorderBrush}" 
+                                BorderThickness="{TemplateBinding BorderThickness}" 
+                                CornerRadius="6">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" Margin="{TemplateBinding Padding}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="{StaticResource ButtonHoverBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="{StaticResource AccentBrush}" />
+                                <Setter TargetName="border" Property="BorderBrush" Value="#90A5B4FC" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- 원형 색상 선택 버튼 스타일 -->
+        <Style x:Key="ColorCircleButtonStyle" TargetType="Button">
+            <Setter Property="Width" Value="20" />
+            <Setter Property="Height" Value="20" />
+            <Setter Property="Margin" Value="2,1" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="circle" Background="{TemplateBinding Background}" 
+                                BorderBrush="#60FFFFFF" BorderThickness="1.5" CornerRadius="10">
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="circle" Property="BorderBrush" Value="#FFFFFFFF" />
+                                <Setter TargetName="circle" Property="BorderThickness" Value="2.5" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <Grid>
+        <!-- 1. 기본 상태: 플로팅 동그라미 버튼 (지름 54px, 드래그 이동 및 원클릭 메뉴 호출) -->
+        <Border x:Name="FloatingCircle"
+                Width="54" Height="54"
+                HorizontalAlignment="Left" VerticalAlignment="Top"
+                Margin="5"
+                CornerRadius="27"
+                BorderBrush="#90FFFFFF" BorderThickness="2"
+                Cursor="Hand"
+                MouseLeftButtonDown="FloatingCircle_MouseLeftButtonDown"
+                MouseLeftButtonUp="FloatingCircle_MouseLeftButtonUp"
+                MouseMove="FloatingCircle_MouseMove"
+                ToolTip="클릭: 판서 메뉴 열기 (단축키: Ctrl+F1) | 드래그: 원하는 곳으로 이동">
+            <Border.Background>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                    <GradientStop Color="#6366F1" Offset="0"/>
+                    <GradientStop Color="#A855F7" Offset="1"/>
+                </LinearGradientBrush>
+            </Border.Background>
+            <Border.Effect>
+                <DropShadowEffect BlurRadius="16" ShadowDepth="3" Direction="270" Opacity="0.55" Color="#000000" />
+            </Border.Effect>
+
+            <Grid>
+                <!-- 판서 연필/도구 아이콘 -->
+                <TextBlock x:Name="TxtCircleToolIcon" Text="✏️" FontSize="20" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Grid>
+        </Border>
+
+        <!-- 2. 펼쳐진 메뉴 카드 (동그라미 클릭 시 열림) -->
+        <Border x:Name="MenuCard"
+                HorizontalAlignment="Left" VerticalAlignment="Top"
+                Margin="5"
+                Background="{StaticResource CardBgBrush}" 
+                BorderBrush="{StaticResource BorderBrush}" 
+                BorderThickness="1.5" 
+                CornerRadius="16"
+                Visibility="Collapsed">
+            <Border.Effect>
+                <DropShadowEffect BlurRadius="24" ShadowDepth="4" Direction="270" Opacity="0.65" Color="#000000" />
+            </Border.Effect>
+
+            <Viewbox Stretch="Uniform" StretchDirection="DownOnly">
+            <Grid x:Name="MenuLayout" Width="310" Margin="12,10,12,10">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" /> <!-- 헤더 (드래그 가능) -->
+                    <RowDefinition Height="*" />    <!-- 도구 영역 -->
+                    <RowDefinition Height="Auto" /> <!-- 하단 푸터 (단축키 및 저작권) -->
+                </Grid.RowDefinitions>
+
+                <!-- 헤더 영역 (마우스 드래그로 이동 가능) -->
+                <Grid x:Name="MenuHeader" Grid.Row="0" Margin="0,0,0,8" Background="Transparent" Cursor="SizeAll" MouseLeftButtonDown="Header_MouseLeftButtonDown">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <!-- 좌측: 로고 배지 + 타이틀 -->
+                    <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                        <Border Width="24" Height="24" CornerRadius="6" Margin="0,0,8,0"
+                                BorderBrush="#60FFFFFF" BorderThickness="1">
+                            <Border.Background>
+                                <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                    <GradientStop Color="#6366F1" Offset="0"/>
+                                    <GradientStop Color="#A855F7" Offset="1"/>
+                                </LinearGradientBrush>
+                            </Border.Background>
+                            <TextBlock Text="✏️" FontSize="11" 
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+
+                        <TextBlock Text="Panseo" Foreground="#FFFFFF" FontWeight="Bold" FontSize="14" VerticalAlignment="Center"/>
+                    </StackPanel>
+
+                    <!-- 우측: 최소화(동그라미로 복귀) & 종료 버튼 -->
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                        <Button x:Name="BtnMinimizeToCircle" Content="─" Style="{StaticResource SidebarButtonStyle}" 
+                                Padding="6,1" Height="24" Width="26" FontSize="12" Click="BtnMinimizeToCircle_Click" ToolTip="동그라미로 접기 (단축키: Ctrl+F1)"/>
+                        <Button x:Name="BtnClose" Content="✕" Style="{StaticResource SidebarButtonStyle}" 
+                                Padding="6,1" Height="24" Width="26" FontSize="11" Margin="2,0,0,0" Click="BtnClose_Click" ToolTip="트레이로 숨기기 (완전 종료는 트레이 우클릭)"/>
+                    </StackPanel>
+                </Grid>
+
+                <!-- 포인터, 판서, 빠른 도구를 세로로 표시 -->
+                <StackPanel Grid.Row="1">
+
+                        <!-- 섹션 1: 🎯 마우스 포인터 효과 -->
+                        <Border Background="{StaticResource ItemBgBrush}" BorderBrush="#15FFFFFF" BorderThickness="1" CornerRadius="8" Padding="8,6" Margin="0,0,0,8">
+                            <StackPanel Orientation="Vertical">
+                                <Grid Margin="0,0,0,4">
+                                    <TextBlock Text="🎯 마우스 포인터 효과" Foreground="{StaticResource TextSecondaryBrush}" FontSize="11" FontWeight="SemiBold"/>
+                                    <CheckBox x:Name="ChkClickRipple" Content="클릭 파동" Foreground="#A8B2C1" FontSize="10" HorizontalAlignment="Right" IsChecked="True" Checked="ChkClickRipple_Changed" Unchecked="ChkClickRipple_Changed"/>
+                                </Grid>
+
+                                <!-- 포인터 모양 버튼 2열 그리드 -->
+                                <UniformGrid Columns="2" Margin="0,2">
+                                    <RadioButton x:Name="RbPointerCircle" GroupName="PointerShapeGroup" Style="{StaticResource SidebarToggleButtonStyle}" IsChecked="True" Click="PointerShape_Click" ToolTip="원형 하이라이터 (Ctrl+F5)" Height="38" Padding="4,2">
+                                        <TextBlock TextAlignment="Center" FontSize="10">🟡 하이라이트<LineBreak/><Run Text="Ctrl+F5" FontSize="9"/></TextBlock>
+                                    </RadioButton>
+                                    <RadioButton x:Name="RbPointerLaser" GroupName="PointerShapeGroup" Style="{StaticResource SidebarToggleButtonStyle}" Click="PointerShape_Click" ToolTip="발광 레이저 포인터 (Ctrl+F6)" Height="38" Padding="4,2">
+                                        <TextBlock TextAlignment="Center" FontSize="10">🔴 레이저 점<LineBreak/><Run Text="Ctrl+F6" FontSize="9"/></TextBlock>
+                                    </RadioButton>
+                                    <RadioButton x:Name="RbPointerSpotlight" GroupName="PointerShapeGroup" Style="{StaticResource SidebarToggleButtonStyle}" Click="PointerShape_Click" ToolTip="마우스 영역만 밝게 (Ctrl+F7)" Height="38" Padding="4,2">
+                                        <TextBlock TextAlignment="Center" FontSize="10">🔦 스포트라이트<LineBreak/><Run Text="Ctrl+F7" FontSize="9"/></TextBlock>
+                                    </RadioButton>
+                                    <RadioButton x:Name="RbPointerRing" GroupName="PointerShapeGroup" Style="{StaticResource SidebarToggleButtonStyle}" Click="PointerShape_Click" ToolTip="도넛형 정밀 링 (Ctrl+F8)" Height="38" Padding="4,2">
+                                        <TextBlock TextAlignment="Center" FontSize="10">🎯 타겟 링<LineBreak/><Run Text="Ctrl+F8" FontSize="9"/></TextBlock>
+                                    </RadioButton>
+                                </UniformGrid>
+                                <RadioButton x:Name="RbPointerNone" GroupName="PointerShapeGroup" Style="{StaticResource SidebarToggleButtonStyle}" Click="PointerShape_Click" Margin="2,0,2,4" ToolTip="포인터 효과 끄기 (Ctrl+F9)" Height="38" Padding="4,2">
+                                        <TextBlock TextAlignment="Center" FontSize="10">🚫 효과 끄기<LineBreak/><Run Text="Ctrl+F9" FontSize="9"/></TextBlock>
+                                    </RadioButton>
+
+                                <!-- 포인터 크기 조절 슬라이더 -->
+                                <Grid Margin="2,4,2,2">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="크기" Foreground="{StaticResource TextSecondaryBrush}" FontSize="10" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                    <Slider Grid.Column="1" x:Name="SliderPointerSize" Minimum="20" Maximum="160" Value="65" VerticalAlignment="Center" ValueChanged="SliderPointerSize_ValueChanged"/>
+                                    <TextBlock Grid.Column="2" x:Name="TxtPointerSizeVal" Text="65" Foreground="#FFFFFF" FontSize="10" Width="24" TextAlignment="Right" VerticalAlignment="Center"/>
+                                </Grid>
+
+                                <!-- 포인터 색상 팔레트 -->
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,4,0,2">
+                                    <Button Background="#FFFFEB3B" Style="{StaticResource ColorCircleButtonStyle}" Tag="#FFFFEB3B" Click="BtnPointerColor_Click" ToolTip="형광 노랑"/>
+                                    <Button Background="#FFFF3B30" Style="{StaticResource ColorCircleButtonStyle}" Tag="#FFFF3B30" Click="BtnPointerColor_Click" ToolTip="빨강"/>
+                                    <Button Background="#FF00E676" Style="{StaticResource ColorCircleButtonStyle}" Tag="#FF00E676" Click="BtnPointerColor_Click" ToolTip="형광 초록"/>
+                                    <Button Background="#FF29B6F6" Style="{StaticResource ColorCircleButtonStyle}" Tag="#FF29B6F6" Click="BtnPointerColor_Click" ToolTip="스카이 블루"/>
+                                    <Button Background="#FFA855F7" Style="{StaticResource ColorCircleButtonStyle}" Tag="#FFA855F7" Click="BtnPointerColor_Click" ToolTip="보라"/>
+                                    <Button Background="#FFFF9800" Style="{StaticResource ColorCircleButtonStyle}" Tag="#FFFF9800" Click="BtnPointerColor_Click" ToolTip="주황"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- 섹션 2: ✏️ 판서 & 도형 그리기 도구 -->
+                        <Border Background="{StaticResource ItemBgBrush}" BorderBrush="#15FFFFFF" BorderThickness="1" CornerRadius="8" Padding="8,6" Margin="0,0,0,8">
+                            <StackPanel Orientation="Vertical">
+                                <TextBlock Text="✏️ 판서 &amp; 그리기 도구" Foreground="{StaticResource TextSecondaryBrush}" FontSize="11" FontWeight="SemiBold" Margin="0,0,0,4"/>
+
+                                <!-- 마우스 조작 모드 (판서 해제) -->
+                                <RadioButton x:Name="RbToolMouse" Content="🖱️ 마우스 조작 모드 [Ctrl+M]" GroupName="DrawingToolGroup" Style="{StaticResource SidebarToggleButtonStyle}" IsChecked="True" Click="DrawingTool_Click" ToolTip="일반 마우스 상태로 복귀 (Ctrl+M)"/>
+
+                                <!-- 그리기 도구 그리드 -->
+                                <UniformGrid Columns="2" Margin="0,2">
+                                    <RadioButton x:Name="RbToolPen" Content="✏️ 일반 펜 [Ctrl+P]" GroupName="DrawingToolGroup" Style="{StaticResource SidebarToggleButtonStyle}" Click="DrawingTool_Click" ToolTip="자유 곡선 필기 (단축키: Ctrl+P)"/>
+                                    <RadioButton x:Name="RbToolHighlighter" Content="🖍️ 형광펜 [Ctrl+H]" GroupName="DrawingToolGroup" Style="{StaticResource SidebarToggleButtonStyle}" Click="DrawingTool_Click" ToolTip="반투명 형광펜 (단축키: Ctrl+H)"/>
+                                    <RadioButton x:Name="RbToolArrow" Content="➡️ 화살표 [Ctrl+A]" GroupName="DrawingToolGroup" Style="{StaticResource SidebarToggleButtonStyle}" Click="DrawingTool_Click" ToolTip="방향 화살표 그리기 (단축키: Ctrl+A)"/>
+                                    <RadioButton x:Name="RbToolRectangle" Content="🔲 사각형 [Ctrl+R]" GroupName="DrawingToolGroup" Style="{StaticResource SidebarToggleButtonStyle}" Click="DrawingTool_Click" ToolTip="강조 사각 박스 (단축키: Ctrl+R)"/>
+                                    <RadioButton x:Name="RbToolEllipse" Content="⭕ 원/타원 [Ctrl+O]" GroupName="DrawingToolGroup" Style="{StaticResource SidebarToggleButtonStyle}" Click="DrawingTool_Click" ToolTip="동그라미 강조 (단축키: Ctrl+O 또는 Ctrl+C)"/>
+                                    <RadioButton x:Name="RbToolLine" Content="➖ 직선 [Ctrl+L]" GroupName="DrawingToolGroup" Style="{StaticResource SidebarToggleButtonStyle}" Click="DrawingTool_Click" ToolTip="반듯한 직선 (단축키: Ctrl+L)"/>
+                                    <RadioButton x:Name="RbToolText" Content="🔤 글자 넣기 [Ctrl+T]" GroupName="DrawingToolGroup" Style="{StaticResource SidebarToggleButtonStyle}" Click="DrawingTool_Click" ToolTip="클릭하여 텍스트 입력 (단축키: Ctrl+T)"/>
+                                    <RadioButton x:Name="RbToolEraser" Content="🧽 지우개 [Ctrl+E]" GroupName="DrawingToolGroup" Style="{StaticResource SidebarToggleButtonStyle}" Click="DrawingTool_Click" ToolTip="클릭한 요소 지우기 (단축키: Ctrl+E)"/>
+                                </UniformGrid>
+
+                                <!-- 선 굵기 조절 슬라이더 -->
+                                <Grid Margin="2,4,2,2">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="굵기" Foreground="{StaticResource TextSecondaryBrush}" FontSize="10" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                    <Slider Grid.Column="1" x:Name="SliderStrokeThickness" Minimum="2" Maximum="24" Value="4" VerticalAlignment="Center" ValueChanged="SliderStrokeThickness_ValueChanged"/>
+                                    <TextBlock Grid.Column="2" x:Name="TxtStrokeVal" Text="4" Foreground="#FFFFFF" FontSize="10" Width="24" TextAlignment="Right" VerticalAlignment="Center"/>
+                                </Grid>
+
+                                <!-- 판서 색상 팔레트 -->
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,4,0,2">
+                                    <Button Background="#FFFF3B30" Style="{StaticResource ColorCircleButtonStyle}" Tag="#FFFF3B30" Click="BtnDrawingColor_Click" ToolTip="빨강 [단축키: Ctrl+1]"/>
+                                    <Button Background="#FFFFEB3B" Style="{StaticResource ColorCircleButtonStyle}" Tag="#FFFFEB3B" Click="BtnDrawingColor_Click" ToolTip="노랑 [단축키: Ctrl+2]"/>
+                                    <Button Background="#FF00E676" Style="{StaticResource ColorCircleButtonStyle}" Tag="#FF00E676" Click="BtnDrawingColor_Click" ToolTip="초록 [단축키: Ctrl+3]"/>
+                                    <Button Background="#FF29B6F6" Style="{StaticResource ColorCircleButtonStyle}" Tag="#FF29B6F6" Click="BtnDrawingColor_Click" ToolTip="파랑 [단축키: Ctrl+4]"/>
+                                    <Button Background="#FFFFFFFF" Style="{StaticResource ColorCircleButtonStyle}" Tag="#FFFFFFFF" Click="BtnDrawingColor_Click" ToolTip="흰색 [단축키: Ctrl+5]"/>
+                                    <Button Background="#FF1E1E1E" Style="{StaticResource ColorCircleButtonStyle}" Tag="#FF1E1E1E" Click="BtnDrawingColor_Click" ToolTip="검정 [단축키: Ctrl+6]"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- 섹션 3: 🛠️ 칠판 및 편집 작업 -->
+                        <Border Background="{StaticResource ItemBgBrush}" BorderBrush="#15FFFFFF" BorderThickness="1" CornerRadius="8" Padding="8,6" Margin="0">
+                            <StackPanel Orientation="Vertical">
+                                <TextBlock Text="🛠️ 빠른 도구 &amp; 편집" Foreground="{StaticResource TextSecondaryBrush}" FontSize="11" FontWeight="SemiBold" Margin="0,0,0,4"/>
+
+                                <CheckBox x:Name="ChkBlackboard" Content="⬛ 칠판 배경 깔기 (Ctrl+F4)" Foreground="#E2E8F0" FontSize="11" Margin="2,2,0,6" Checked="ChkBlackboard_Changed" Unchecked="ChkBlackboard_Changed"/>
+
+                                <UniformGrid Columns="2">
+                                    <Button x:Name="BtnUndo" Content="↩ 되돌리기 [Ctrl+Z]" Style="{StaticResource SidebarButtonStyle}" Click="BtnUndo_Click" ToolTip="Ctrl+Z"/>
+                                    <Button x:Name="BtnRedo" Content="↪ 다시실행 [Ctrl+Y]" Style="{StaticResource SidebarButtonStyle}" Click="BtnRedo_Click" ToolTip="Ctrl+Y"/>
+                                    <Button x:Name="BtnClearAll" Style="{StaticResource SidebarButtonStyle}" Height="38" Padding="4,2" Click="BtnClearAll_Click" ToolTip="전체 지우기 (Ctrl+Delete)">
+                                        <TextBlock TextAlignment="Center" FontSize="10">🧹 전체 지우기<LineBreak/><Run Text="Ctrl+Delete" FontSize="9"/></TextBlock>
+                                    </Button>
+                                    <Button x:Name="BtnSaveScreenshot" Style="{StaticResource SidebarButtonStyle}" Height="38" Padding="4,2" Click="BtnSaveScreenshot_Click" ToolTip="영역 선택 후 편집 및 저장 (Ctrl+F10)">
+                                        <TextBlock TextAlignment="Center" FontSize="10">📸 캡처 저장<LineBreak/><Run Text="Ctrl+F10" FontSize="9"/></TextBlock>
+                                    </Button>
+                                </UniformGrid>
+                                <Button x:Name="BtnPinScreenshot" Content="📌 영역 캡처 고정 [Ctrl+F11]" Style="{StaticResource SidebarButtonStyle}" Click="BtnPinScreenshot_Click" ToolTip="영역을 선택하여 맨 위에 고정"/>
+                            </StackPanel>
+                        </Border>
+
+                </StackPanel>
+
+                <!-- 하단 푸터: 단축키 안내 -->
+                <Border Grid.Row="2" Background="#12FFFFFF" CornerRadius="6" Padding="6,7" Margin="0,6,0,0">
+                    <TextBlock Text="Ctrl+F1: 메뉴 | Ctrl+F2: 판서 | Ctrl+F3: 포인터&#x0a;Ctrl+F4: 칠판 | Esc: 취소" Foreground="#88A0B8" FontSize="9.5" TextWrapping="Wrap" TextAlignment="Center"/>
+                </Border>
+            </Grid>
+            </Viewbox>
+        </Border>
+    </Grid>
+</Window>

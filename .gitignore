@@ -1,0 +1,11 @@
+/bin/
+/obj/
+/dist/
+/*.exe
+/*.exe.*
+/*.zip
+/tests/*.png
+/tests/update-fixtures/
+*.user
+*.suo
+.vs/
