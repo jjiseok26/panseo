@@ -15,7 +15,7 @@ try {
     & $builderPath Panseo.csproj /t:Rebuild /p:Configuration=Release /verbosity:minimal /nologo
     if ($LASTEXITCODE -ne 0) { throw 'Build failed' }
     $powershell = Join-Path $env:WINDIR 'System32\WindowsPowerShell\v1.0\powershell.exe'
-    foreach ($test in 'verify-ui.ps1', 'verify-capture.ps1', 'verify-update.ps1') {
+    foreach ($test in 'verify-ui.ps1', 'verify-capture.ps1', 'verify-update.ps1', 'verify-zoom.ps1') {
         & $powershell -NoProfile -STA -ExecutionPolicy Bypass -File (Join-Path $root "tests\$test")
         if ($LASTEXITCODE -ne 0) { throw "Failed: $test" }
     }

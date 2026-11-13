@@ -1,8 +1,5 @@
 ﻿using System;
 using System.Diagnostics;
-using System.Drawing;
-using System.Drawing.Imaging;
-using System.IO;
 using System.Threading.Tasks;
 using System.Runtime.InteropServices;
 using System.Windows;
@@ -25,6 +22,8 @@ namespace Panseo.Views
         private OverlayWindowManager _overlayManager;
         private bool _isMenuOpen = false;
         private bool _isCapturing;
+        private ScreenZoomWindow _zoomWindow;
+        private ManualWindow _manualWindow;
 
         public bool IsMenuOpen
         {
@@ -49,6 +48,7 @@ namespace Panseo.Views
         private const int HOTKEY_ID_CAPTURE = 9009;
         private const int HOTKEY_ID_PIN = 9010;
         private const int HOTKEY_ID_MOUSE = 9011;
+        private const int HOTKEY_ID_ZOOM = 9012;
         private const int HOTKEY_ID_POINTER_FIRST = 9004;
         private static readonly PointerShape[] PointerShortcutShapes =
         {
@@ -69,11 +69,7 @@ namespace Panseo.Views
             // 창 아이콘 안전 로드
             try
             {
-                string icoPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "app.ico");
-                if (File.Exists(icoPath))
-                {
-                    this.Icon = new BitmapImage(new Uri(icoPath, UriKind.Absolute));
-                }
+                this.Icon = BitmapFrame.Create(new Uri("pack://application:,,,/Panseo;component/panseo.ico", UriKind.Absolute));
             }
             catch { }
 
@@ -108,6 +104,7 @@ namespace Panseo.Views
                 Win32.RegisterHotKey(helper.Handle, HOTKEY_ID_CAPTURE, MOD_CONTROL | 0x4000, 0x79);
                 Win32.RegisterHotKey(helper.Handle, HOTKEY_ID_PIN, MOD_CONTROL | 0x4000, 0x7A);
                 Win32.RegisterHotKey(helper.Handle, HOTKEY_ID_MOUSE, MOD_CONTROL, 0x4D);
+                Win32.RegisterHotKey(helper.Handle, HOTKEY_ID_ZOOM, MOD_CONTROL | 0x4000, 0x7B);
                 for (int i = 0; i < PointerShortcutShapes.Length; i++)
                 {
                     Win32.RegisterHotKey(helper.Handle, HOTKEY_ID_POINTER_FIRST + i, MOD_CONTROL, (uint)(0x74 + i)); // Ctrl+F5 ~ F9
@@ -146,6 +143,7 @@ namespace Panseo.Views
                 Win32.UnregisterHotKey(helper.Handle, HOTKEY_ID_CAPTURE);
                 Win32.UnregisterHotKey(helper.Handle, HOTKEY_ID_PIN);
                 Win32.UnregisterHotKey(helper.Handle, HOTKEY_ID_MOUSE);
+                Win32.UnregisterHotKey(helper.Handle, HOTKEY_ID_ZOOM);
                 for (int i = 0; i < PointerShortcutShapes.Length; i++)
                 {
                     Win32.UnregisterHotKey(helper.Handle, HOTKEY_ID_POINTER_FIRST + i);
@@ -172,6 +170,8 @@ namespace Panseo.Views
             {
                 if (_isCapturing) { handled = true; return IntPtr.Zero; }
                 int id = wParam.ToInt32();
+                if (id == HOTKEY_ID_ZOOM) { ToggleScreenZoom(); handled = true; return IntPtr.Zero; }
+                if (_zoomWindow != null) _zoomWindow.Close();
                 if (id == HOTKEY_ID_CAPTURE || id == HOTKEY_ID_PIN)
                 {
                     var editor = GetActiveCaptureEditor();
@@ -230,7 +230,7 @@ namespace Panseo.Views
         private IntPtr KeyboardHookCallback(int nCode, IntPtr wParam, IntPtr lParam)
         {
             // 캡처 창의 입력은 해당 창이 처리하여 바탕화면 판서와 충돌하지 않게 한다.
-            if (_isCapturing || GetActiveCaptureEditor() != null)
+            if (_isCapturing || _zoomWindow != null || (_manualWindow != null && _manualWindow.IsActive) || GetActiveCaptureEditor() != null)
                 return Win32.CallNextHookEx(_keyboardHookId, nCode, wParam, lParam);
             if (nCode >= 0 && (wParam.ToInt32() == Win32.WM_KEYDOWN || wParam.ToInt32() == Win32.WM_SYSKEYDOWN))
             {
@@ -427,7 +427,7 @@ namespace Panseo.Views
                 case DrawingTool.Line: icon = "➖"; break;
                 case DrawingTool.Text: icon = "🔤"; break;
                 case DrawingTool.Eraser: icon = "🧽"; break;
-                default: icon = "✏️"; break;
+                default: icon = "판서"; break;
             }
             TxtCircleToolIcon.Text = icon;
 
@@ -826,6 +826,58 @@ namespace Panseo.Views
             StartCapture(true);
         }
 
+        public void ShowManual()
+        {
+            if (_manualWindow == null)
+            {
+                _manualWindow = new ManualWindow();
+                _manualWindow.Closed += (s, e) => _manualWindow = null;
+                _manualWindow.Show();
+            }
+            else { _manualWindow.WindowState = WindowState.Normal; _manualWindow.Activate(); }
+        }
+
+        private void BtnManual_Click(object sender, RoutedEventArgs e) { ShowManual(); }
+        private void BtnScreenZoom_Click(object sender, RoutedEventArgs e) { ToggleScreenZoom(); }
+
+        public async void ToggleScreenZoom()
+        {
+            if (_zoomWindow != null) { _zoomWindow.Close(); return; }
+            if (_isCapturing) return;
+            _isCapturing = true;
+            bool visible = IsVisible;
+            var pointer = AppSettings.Instance.PointerShape;
+            try
+            {
+                SelectTool(DrawingTool.None);
+                AppSettings.Instance.PointerShape = PointerShape.None;
+                CloseMenu();
+                Hide();
+                await Task.Delay(350); // Allow existing click ripples to finish before freezing the screen.
+                var bounds = System.Windows.Forms.Screen.FromPoint(System.Windows.Forms.Cursor.Position).Bounds;
+                _zoomWindow = new ScreenZoomWindow(ScreenCapture.Take(bounds), bounds);
+                _zoomWindow.Closed += (s, e) => _zoomWindow = null;
+                _zoomWindow.Show();
+            }
+            catch (Exception ex)
+            {
+                _zoomWindow = null;
+                MessageBox.Show("확대 모드를 열 수 없습니다: " + ex.Message, "Panseo", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                if (visible)
+                {
+                    bool activate = ShowActivated;
+                    ShowActivated = false;
+                    Show();
+                    ShowActivated = activate;
+                }
+                AppSettings.Instance.PointerShape = pointer;
+                _isCapturing = false;
+            }
+        }
+
         private async void StartCapture(bool pin)
         {
             if (_isCapturing) return;
@@ -841,24 +893,7 @@ namespace Panseo.Views
                 // 숨긴 메뉴와 포인터가 캡처에 들어가지 않도록 다음 화면 갱신을 기다린다.
                 await Task.Delay(120);
                 var bounds = System.Windows.Forms.SystemInformation.VirtualScreen;
-                BitmapSource snapshot;
-                using (var bitmap = new Bitmap(bounds.Width, bounds.Height))
-                {
-                    using (var graphics = Graphics.FromImage(bitmap))
-                        graphics.CopyFromScreen(bounds.Left, bounds.Top, 0, 0, bitmap.Size, CopyPixelOperation.SourceCopy);
-                    using (var stream = new MemoryStream())
-                    {
-                        bitmap.Save(stream, ImageFormat.Png);
-                        stream.Position = 0;
-                        var image = new BitmapImage();
-                        image.BeginInit();
-                        image.CacheOption = BitmapCacheOption.OnLoad;
-                        image.StreamSource = stream;
-                        image.EndInit();
-                        image.Freeze();
-                        snapshot = image;
-                    }
-                }
+                BitmapSource snapshot = ScreenCapture.Take(bounds);
                 var selector = new RegionCaptureWindow(snapshot, bounds);
                 if (selector.ShowDialog() == true)
                 {

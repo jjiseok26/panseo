@@ -308,8 +308,8 @@ namespace Panseo.Views
             Width = image.PixelWidth * scale + 2;
             Height = image.PixelHeight * scale + 2;
             var border = new Border { BorderBrush = Brushes.DeepSkyBlue, BorderThickness = new Thickness(1),
-                Child = new Image { Source = image, Stretch = Stretch.Fill }, Cursor = Cursors.SizeAll,
-                ToolTip = "드래그: 이동 · 우클릭: 저장하기 / 닫기" };
+                Child = new ZoomImageView(image, false), Cursor = Cursors.SizeAll,
+                ToolTip = "휠: 확대/축소 · Ctrl+드래그: 이미지 이동 · 드래그: 창 이동 · 더블클릭: 기본 크기 · 우클릭: 저장/닫기" };
             var menu = new ContextMenu();
             var save = new MenuItem { Header = "저장하기" };
             save.Click += (s, e) => CaptureFiles.Save(this, _image);
@@ -320,6 +320,7 @@ namespace Panseo.Views
             border.ContextMenu = menu;
             border.MouseLeftButtonDown += (s, e) => Win32.TryDragMove(this);
             Content = border;
+            KeyDown += (s, e) => { if (e.Key == Key.D0 || e.Key == Key.NumPad0) ((ZoomImageView)border.Child).Reset(); };
         }
     }
 }

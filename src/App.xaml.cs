@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Drawing;
-using System.IO;
 using System.Threading;
 using System.Windows;
 using System.Windows.Forms;
@@ -17,6 +16,7 @@ namespace Panseo
         private OverlayWindowManager _overlayManager;
         private FloatingToolbarWindow _toolbarWindow;
         private NotifyIcon _trayIcon;
+        private Icon _applicationIcon;
         private AutoUpdater _updater;
         private System.Windows.Threading.DispatcherTimer _updateTimer;
 
@@ -108,16 +108,9 @@ namespace Panseo
                 _trayIcon = new NotifyIcon();
                 _trayIcon.Text = "Panseo 판서 & 포인터";
 
-                // 아이콘 로드 (안전 방어 코드)
-                string icoPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "app.ico");
-                if (File.Exists(icoPath))
-                {
-                    _trayIcon.Icon = new Icon(icoPath);
-                }
-                else
-                {
-                    _trayIcon.Icon = SystemIcons.Application;
-                }
+                // 포터블 실행 파일에 내장한 아이콘을 사용한다.
+                _applicationIcon = AppIcon.Load();
+                _trayIcon.Icon = _applicationIcon;
 
                 // 컨텍스트 메뉴 설정
                 var contextMenu = new ContextMenu();
@@ -146,6 +139,8 @@ namespace Panseo
                     _toolbarWindow.Dispatcher.Invoke((Action)(() => _toolbarWindow.ToggleBlackboard()));
                 }));
 
+                contextMenu.MenuItems.Add(new MenuItem("확대/축소 (Ctrl+F12)", (s, ev) => _toolbarWindow.ToggleScreenZoom()));
+                contextMenu.MenuItems.Add(new MenuItem("사용 설명서", (s, ev) => _toolbarWindow.ShowManual()));
                 contextMenu.MenuItems.Add(new MenuItem("업데이트 확인", (s, ev) => CheckForUpdates(true)));
                 contextMenu.MenuItems.Add("-");
 
@@ -204,6 +199,8 @@ namespace Panseo
                 _trayIcon.Dispose();
                 _trayIcon = null;
             }
+
+            if (_applicationIcon != null) { _applicationIcon.Dispose(); _applicationIcon = null; }
 
             if (_overlayManager != null)
             {
