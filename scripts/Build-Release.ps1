@@ -21,7 +21,7 @@ try {
     }
     [void](New-Item -ItemType Directory -Path dist -Force)
     Copy-Item -LiteralPath bin\Release\Panseo.exe -Destination dist\Panseo.exe -Force
-    Copy-Item -LiteralPath bin\Release\Panseo.exe -Destination dist\Panseo_포터블.exe -Force
-    Compress-Archive -LiteralPath dist\Panseo_포터블.exe,README.md -DestinationPath dist\Panseo-portable.zip -Force
+    Copy-Item -LiteralPath bin\Release\Panseo.exe -Destination dist\Panseo-portable.exe -Force
+    Compress-Archive -LiteralPath dist\Panseo-portable.exe,README.md -DestinationPath dist\Panseo-portable.zip -Force
     Get-FileHash -LiteralPath dist\Panseo.exe -Algorithm SHA256
 } finally { Pop-Location }

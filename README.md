@@ -139,7 +139,7 @@
 ## 🚀 포터블 실행 방법
 
 설치가 전혀 필요 없으며, 아래 파일 중 하나를 더블 클릭하여 실행하시면 됩니다:
-- [**Panseo_포터블.exe**](https://github.com/jjiseok26/panseo/releases/latest/download/Panseo_%ED%8F%AC%ED%84%B0%EB%B8%94.exe) 또는 [**Panseo.exe**](https://github.com/jjiseok26/panseo/releases/latest/download/Panseo.exe)
+- [**Panseo_포터블.exe**](https://github.com/jjiseok26/panseo/releases/latest/download/Panseo-portable.exe) 또는 [**Panseo.exe**](https://github.com/jjiseok26/panseo/releases/latest/download/Panseo.exe)
 - **Panseo_실행.bat** (소스 폴더에서 실행)
 
 
