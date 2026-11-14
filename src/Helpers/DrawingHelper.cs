@@ -8,9 +8,9 @@ namespace Panseo.Helpers
 {
     public static class DrawingHelper
     {
-        public static FrameworkElement CreateNumberStamp(long number, Point center, Color color, double thickness)
+        public static FrameworkElement CreateNumberStamp(long number, Point center, Color color, double thickness, double sizeScale = 1.0)
         {
-            double diameter = Math.Max(32, thickness * 8);
+            double diameter = Math.Max(32, thickness * 8) * Math.Max(0.5, Math.Min(2.0, sizeScale));
             var foreground = (0.299 * color.R + 0.587 * color.G + 0.114 * color.B) > 170 ? Brushes.Black : Brushes.White;
             var marker = new Grid { Width = diameter, Height = diameter, IsHitTestVisible = false, Tag = number };
             marker.Children.Add(new Ellipse

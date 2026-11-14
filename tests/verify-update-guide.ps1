@@ -7,7 +7,7 @@ $guide = $type.GetMethod('CreateIllustratedGuide',[Reflection.BindingFlags]'Stat
 $cards = $guide.Children[1]
 if ($cards.Children.Count -ne 4) { throw 'Update illustrations missing' }
 if (-not $cards.Children[0].Child.Children[0].Text.Contains('Ctrl+Q')) { throw 'Zoom shortcut in illustration incorrect' }
-if ($cards.Children[1].Child.Children[1].Child.Children.Count -ne 6) { throw 'Number illustration missing' }
+if ($cards.Children[1].Child.Children[1].Child.Children.Count -ne 8) { throw 'Number illustration missing' }
 $guide.Measure([Windows.Size]::new(720,[double]::PositiveInfinity))
 $height = [int][Math]::Ceiling($guide.DesiredSize.Height)
 $guide.Arrange([Windows.Rect]::new(0,0,720,$height))
@@ -36,5 +36,5 @@ $status = $type.GetField('_status',[Reflection.BindingFlags]'Instance,NonPublic'
 if ($status.Text -ne 'Download complete' -or $update.IsEnabled) { throw 'Update status failed' }
 $toolbar = [Panseo.Views.FloatingToolbarWindow]::new($null)
 if (-not $toolbar.FindName('TxtCircleToolIcon').Text.Contains(([char]0x270F).ToString())) { throw 'Pencil icon not restored' }
-if (-not $toolbar.FindName('BtnScreenZoom').Content.Contains('Ctrl+Q')) { throw 'Toolbar zoom shortcut incorrect' }
+if ($toolbar.FindName('BtnScreenZoom').Content.Inlines.LastInline.Text -ne 'Ctrl+Q') { throw 'Toolbar zoom shortcut incorrect' }
 'PASS: illustrated update guide, release image export, status updates, Ctrl+Q label, pencil icon.'

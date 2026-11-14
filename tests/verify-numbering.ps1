@@ -64,12 +64,29 @@ if ($settings.TakeNextNumber() -ne 7) { throw 'Invalid input changed current seq
 $before = $canvasOne.Children.Count
 [void]$toolbar.GetType().GetMethod('BtnResetNumber_Click',$flags).Invoke($toolbar,@($null,$null))
 if ($settings.TakeNextNumber() -ne 1 -or $canvasOne.Children.Count -ne $before -or $toolbar.FindName('TxtStartNumber').Text -ne '1') { throw 'Reset changed old stamps or input was not reset' }
+$smaller = $toolbar.FindName('BtnNumberSmaller')
+$larger = $toolbar.FindName('BtnNumberLarger')
+$card = $toolbar.FindName('MenuCard')
+$applyX = $toolbar.FindName('BtnApplyStartNumber').TransformToAncestor($card).Transform([Windows.Point]::new(0,0)).X
+$smallX = $smaller.TransformToAncestor($card).Transform([Windows.Point]::new(0,0)).X
+$largeX = $larger.TransformToAncestor($card).Transform([Windows.Point]::new(0,0)).X
+if ($applyX -ge $smallX -or $smallX -ge $largeX) { throw 'Number size buttons are not beside Apply' }
+$settings.NumberSize = 1
+[void]$toolbar.GetType().GetMethod('BtnNumberLarger_Click',$flags).Invoke($toolbar,@($null,$null))
+if ($settings.NumberSize -ne 1.25) { throw 'Number size increase failed' }
+$settings.SetStartNumber(9)
+$event = [Windows.Input.MouseButtonEventArgs]::new([Windows.Input.Mouse]::PrimaryDevice,0,[Windows.Input.MouseButton]::Left)
+$event.RoutedEvent = [Windows.Input.Mouse]::MouseDownEvent
+[void]$down.Invoke($one,@($event))
+if ($canvasOne.Children[$canvasOne.Children.Count-1].Width -ne 40) { throw 'Number stamp did not use selected size' }
+$settings.NumberSize = 1
 $settings.SetStartNumber([int]::MaxValue)
 if ($settings.TakeNextNumber() -ne 2147483647L -or $settings.TakeNextNumber() -ne 2147483648L) { throw 'Large start overflowed' }
 $settings.ResetNumbering()
 $pixels = [byte[]]::new(320*200*4)
 $image = [Windows.Media.Imaging.BitmapSource]::Create(320,200,96,96,[Windows.Media.PixelFormats]::Bgra32,$null,$pixels,1280)
 $editor = [Panseo.Views.CaptureEditorWindow]::new($image)
+$settings.NumberSize = 1.5
 $editor.SelectTool([Panseo.Models.DrawingTool]::Number)
 $mouseDown = $editor.GetType().GetMethod('CanvasMouseDown',$flags)
 foreach ($index in 1..3) {
@@ -78,7 +95,8 @@ foreach ($index in 1..3) {
     [void]$mouseDown.Invoke($editor,@($editor,$event))
 }
 $canvas = $editor.GetType().GetField('_canvas',$flags).GetValue($editor)
-if ($canvas.Children.Count -ne 3 -or $canvas.Children[2].Tag -ne 3 -or $editor.GetType().GetField('_drawing',$flags).GetValue($editor)) { throw 'Capture click numbering failed' }
+if ($canvas.Children.Count -ne 3 -or $canvas.Children[2].Tag -ne 3 -or $canvas.Children[2].Width -ne 48 -or $editor.GetType().GetField('_drawing',$flags).GetValue($editor)) { throw 'Capture click numbering or size failed' }
+$settings.NumberSize = 1
 $editor.Undo(); $editor.Redo()
 if ($canvas.Children.Count -ne 3) { throw 'Capture number undo/redo failed' }
 $input = $editor.GetType().GetField('_startNumberInput',$flags).GetValue($editor)

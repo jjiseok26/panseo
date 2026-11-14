@@ -34,6 +34,19 @@ namespace Panseo.Models
         private bool _isBlackboardActive = false;
         private bool _isTextEditing = false;
         private long _nextNumber = 1;
+        private double _numberSize = 1.0;
+
+        public double NumberSize
+        {
+            get { return _numberSize; }
+            set
+            {
+                double size = Math.Max(0.5, Math.Min(2.0, value));
+                if (Math.Abs(_numberSize - size) < 0.01) return;
+                _numberSize = size;
+                OnPropertyChanged("NumberSize");
+            }
+        }
 
         public long TakeNextNumber() { return _nextNumber++; }
         public void ResetNumbering() { SetStartNumber(1); }

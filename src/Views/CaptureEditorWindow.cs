@@ -73,10 +73,12 @@ namespace Panseo.Views
             _startNumberInput.KeyDown += (s, e) => { if (e.Key == Key.Enter) { ApplyStartNumber(); e.Handled = true; } };
             numberControls.Children.Add(_startNumberInput);
             AddButton(numberControls, "번호 적용", ApplyStartNumber);
+            AddButton(numberControls, "작게 −", () => ChangeNumberSize(-0.25));
+            AddButton(numberControls, "크게 +", () => ChangeNumberSize(0.25));
             tools.Children.Add(numberControls);
             AddButton(tools, "되돌리기 Ctrl+Z", Undo);
             AddButton(tools, "다시 실행 Ctrl+Y", Redo);
-            AddButton(tools, "저장 Ctrl+F10", SaveCapture);
+            AddButton(tools, "저장 Ctrl+F12", SaveCapture);
             AddButton(tools, "화면 고정 Ctrl+F11", PinCapture);
             AddButton(tools, "전체 지우기", ClearAll);
             if (screenZoom)
@@ -210,10 +212,16 @@ namespace Panseo.Views
             _status.Text = "다음 클릭부터 1번으로 시작합니다.";
         }
 
+        private void ChangeNumberSize(double change)
+        {
+            AppSettings.Instance.NumberSize += change;
+            _status.Text = "번호 크기: " + (int)(AppSettings.Instance.NumberSize * 100) + "% · 다음 번호부터 적용됩니다.";
+        }
+
         private void StampNumber(Point point)
         {
             long number = ZoomView != null ? AppSettings.Instance.TakeNextNumber() : _nextNumber++;
-            AddAnnotation(DrawingHelper.CreateNumberStamp(number, point, AppSettings.Instance.DrawingColor, AppSettings.Instance.StrokeThickness));
+            AddAnnotation(DrawingHelper.CreateNumberStamp(number, point, AppSettings.Instance.DrawingColor, AppSettings.Instance.StrokeThickness, AppSettings.Instance.NumberSize));
         }
 
         private UIElement CreateShape(DrawingTool tool, Point start, Point end)
@@ -361,7 +369,7 @@ namespace Panseo.Views
                 case Key.A: SelectTool(DrawingTool.Arrow); break;
                 case Key.T: SelectTool(DrawingTool.Text); break;
                 case Key.N: SelectTool(DrawingTool.Number); break;
-                case Key.F10: SaveCapture(); break;
+                case Key.F12: SaveCapture(); break;
                 case Key.F11: PinCapture(); break;
                 case Key.Delete: ClearAll(); break;
                 case Key.D1: AppSettings.Instance.DrawingColor = Colors.Red; break;
@@ -406,7 +414,7 @@ namespace Panseo.Views
         public void PinCapture()
         {
             new PinnedCaptureWindow(RenderCapture()).Show();
-            _status.Text = "화면에 고정했습니다. 고정 화면 우클릭 → 저장하기 / 닫기";
+            _status.Text = "화면에 고정했습니다. 고정 화면 우클릭 → 저장하기 / 복사하기 / 닫기";
         }
     }
 
@@ -459,13 +467,20 @@ namespace Panseo.Views
             Height = image.PixelHeight * scale + 2;
             var border = new Border { BorderBrush = Brushes.DeepSkyBlue, BorderThickness = new Thickness(1),
                 Child = new ZoomImageView(image, false), Cursor = Cursors.SizeAll,
-                ToolTip = "휠: 확대/축소 · Ctrl+드래그: 이미지 이동 · 드래그: 창 이동 · 더블클릭: 기본 크기 · 우클릭: 저장/닫기" };
+                ToolTip = "휠: 확대/축소 · Ctrl+드래그: 이미지 이동 · 드래그: 창 이동 · 더블클릭: 기본 크기 · 우클릭: 저장/복사/닫기" };
             var menu = new ContextMenu();
             var save = new MenuItem { Header = "저장하기" };
             save.Click += (s, e) => CaptureFiles.Save(this, _image);
+            var copy = new MenuItem { Header = "복사하기" };
+            copy.Click += (s, e) =>
+            {
+                try { Clipboard.SetImage(_image); }
+                catch (Exception ex) { MessageBox.Show(this, "이미지를 복사할 수 없습니다: " + ex.Message, "Panseo", MessageBoxButton.OK, MessageBoxImage.Error); }
+            };
             var close = new MenuItem { Header = "닫기" };
             close.Click += (s, e) => Close();
             menu.Items.Add(save);
+            menu.Items.Add(copy);
             menu.Items.Add(close);
             border.ContextMenu = menu;
             border.MouseLeftButtonDown += (s, e) => Win32.TryDragMove(this);

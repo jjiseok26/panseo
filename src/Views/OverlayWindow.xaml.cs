@@ -573,7 +573,7 @@ namespace Panseo.Views
         private void StampNumber(Point point)
         {
             var settings = AppSettings.Instance;
-            AddDrawingElement(DrawingHelper.CreateNumberStamp(settings.TakeNextNumber(), point, settings.DrawingColor, settings.StrokeThickness));
+            AddDrawingElement(DrawingHelper.CreateNumberStamp(settings.TakeNextNumber(), point, settings.DrawingColor, settings.StrokeThickness, settings.NumberSize));
         }
 
         private void AddDrawingElement(UIElement element)

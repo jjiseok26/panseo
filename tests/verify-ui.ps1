@@ -11,11 +11,20 @@ $card = $window.FindName('MenuCard')
 $card.Measure([Windows.Size]::new($window.Width, $window.Height))
 $card.Arrange([Windows.Rect]::new(0, 0, $window.Width, $window.Height))
 $card.UpdateLayout()
-foreach ($name in 'RbPointerCircle', 'RbToolMouse', 'RbToolEraser', 'BtnSaveScreenshot', 'BtnClearAll', 'BtnPinScreenshot', 'BtnScreenZoom', 'BtnManual', 'BtnUpdateCheck', 'RbToolNumber', 'BtnResetNumber', 'TxtStartNumber', 'BtnApplyStartNumber', 'ChkBlackboard') {
+foreach ($name in 'RbPointerCircle', 'RbToolMouse', 'RbToolEraser', 'BtnSaveScreenshot', 'BtnClearAll', 'BtnPinScreenshot', 'BtnScreenZoom', 'BtnManual', 'BtnUpdateCheck', 'RbToolNumber', 'BtnResetNumber', 'TxtStartNumber', 'BtnApplyStartNumber', 'BtnNumberSmaller', 'BtnNumberLarger', 'ChkBlackboard') {
     $control = $window.FindName($name)
     $rect = $control.TransformToAncestor($card).TransformBounds([Windows.Rect]::new(0, 0, $control.ActualWidth, $control.ActualHeight))
     if ($rect.Width -le 0 -or $rect.Height -le 0 -or $rect.Right -gt $card.ActualWidth + 1 -or $rect.Bottom -gt $card.ActualHeight + 1) { throw "Control clipped: $name ($rect)" }
 }
+$clear = $window.FindName('BtnClearAll')
+$zoom = $window.FindName('BtnScreenZoom')
+$pin = $window.FindName('BtnPinScreenshot')
+$save = $window.FindName('BtnSaveScreenshot')
+if ($clear.Parent -ne $zoom.Parent -or $pin.Parent -ne $save.Parent -or $clear.Parent -ne $pin.Parent -or
+    $clear.TransformToAncestor($card).Transform([Windows.Point]::new(0,0)).X -ge $zoom.TransformToAncestor($card).Transform([Windows.Point]::new(0,0)).X -or
+    $pin.TransformToAncestor($card).Transform([Windows.Point]::new(0,0)).X -ge $save.TransformToAncestor($card).Transform([Windows.Point]::new(0,0)).X) { throw 'Capture/zoom button order failed' }
+if ($save.Content.Inlines.LastInline.Text -ne 'Ctrl+F12') { throw 'Capture shortcut label is stale' }
+if ((Get-Content (Join-Path $root 'src\Views\FloatingToolbarWindow.xaml.cs') -Raw) -notmatch 'HOTKEY_ID_CAPTURE, MOD_CONTROL \| 0x4000, 0x7B') { throw 'Ctrl+F12 global hotkey missing' }
 if ($null -eq $window.FindName('MenuHeader').Background) { throw 'Header empty space is not draggable' }
 $previousBottom = 0
 foreach ($name in 'RbPointerCircle', 'RbToolMouse', 'ChkBlackboard') {

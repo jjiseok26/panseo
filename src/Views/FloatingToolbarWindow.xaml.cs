@@ -40,6 +40,7 @@ namespace Panseo.Views
 
         private Win32.LowLevelMouseProc _keyboardProc;
         private IntPtr _keyboardHookId = IntPtr.Zero;
+        private bool _captureHotkeyRegistered;
 
         private const int HOTKEY_ID_F1 = 9000;
         private const int HOTKEY_ID_F2 = 9001;
@@ -87,7 +88,7 @@ namespace Panseo.Views
 
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
-            // 전역 단축키 등록 (Ctrl+F1 ~ Ctrl+F11, Ctrl+M, Ctrl+Q)
+            // 전역 단축키 등록 (Ctrl+F1 ~ Ctrl+F9, Ctrl+F11/F12, Ctrl+M, Ctrl+Q)
             try
             {
                 var helper = new WindowInteropHelper(this);
@@ -101,7 +102,7 @@ namespace Panseo.Views
                 Win32.RegisterHotKey(helper.Handle, HOTKEY_ID_F2, MOD_CONTROL, VK_F2);
                 Win32.RegisterHotKey(helper.Handle, HOTKEY_ID_F3, MOD_CONTROL, VK_F3);
                 Win32.RegisterHotKey(helper.Handle, HOTKEY_ID_F4, MOD_CONTROL, VK_F4);
-                Win32.RegisterHotKey(helper.Handle, HOTKEY_ID_CAPTURE, MOD_CONTROL | 0x4000, 0x79);
+                _captureHotkeyRegistered = Win32.RegisterHotKey(helper.Handle, HOTKEY_ID_CAPTURE, MOD_CONTROL | 0x4000, 0x7B);
                 Win32.RegisterHotKey(helper.Handle, HOTKEY_ID_PIN, MOD_CONTROL | 0x4000, 0x7A);
                 Win32.RegisterHotKey(helper.Handle, HOTKEY_ID_MOUSE, MOD_CONTROL, 0x4D);
                 Win32.RegisterHotKey(helper.Handle, HOTKEY_ID_ZOOM, MOD_CONTROL | 0x4000, 0x51);
@@ -140,7 +141,7 @@ namespace Panseo.Views
                 Win32.UnregisterHotKey(helper.Handle, HOTKEY_ID_F2);
                 Win32.UnregisterHotKey(helper.Handle, HOTKEY_ID_F3);
                 Win32.UnregisterHotKey(helper.Handle, HOTKEY_ID_F4);
-                Win32.UnregisterHotKey(helper.Handle, HOTKEY_ID_CAPTURE);
+                if (_captureHotkeyRegistered) Win32.UnregisterHotKey(helper.Handle, HOTKEY_ID_CAPTURE);
                 Win32.UnregisterHotKey(helper.Handle, HOTKEY_ID_PIN);
                 Win32.UnregisterHotKey(helper.Handle, HOTKEY_ID_MOUSE);
                 Win32.UnregisterHotKey(helper.Handle, HOTKEY_ID_ZOOM);
@@ -235,6 +236,13 @@ namespace Panseo.Views
             {
                 var kbd = (Win32.KBDLLHOOKSTRUCT)Marshal.PtrToStructure(lParam, typeof(Win32.KBDLLHOOKSTRUCT));
                 int vk = (int)kbd.vkCode;
+
+                // Some Windows configurations reserve F12; keep Ctrl+F12 available through the existing hook.
+                if (!_captureHotkeyRegistered && vk == 0x7B && Keyboard.Modifiers == ModifierKeys.Control)
+                {
+                    Dispatcher.BeginInvoke((Action)(() => StartCapture(false)));
+                    return new IntPtr(1);
+                }
 
                 // 글자 넣기 상자에서 타이핑 중일 때는 텍스트 입력을 위해 단축키 가로채기 통과
                 if (!AppSettings.Instance.IsTextEditing)
@@ -877,6 +885,16 @@ namespace Panseo.Views
             TxtNumberStatus.Text = "다음 클릭부터 " + number + "번으로 시작합니다.";
             TxtNumberStatus.Foreground = Brushes.LightGreen;
             BtnApplyStartNumber.Focus();
+        }
+
+        private void BtnNumberSmaller_Click(object sender, RoutedEventArgs e) { ChangeNumberSize(-0.25); }
+        private void BtnNumberLarger_Click(object sender, RoutedEventArgs e) { ChangeNumberSize(0.25); }
+
+        private void ChangeNumberSize(double change)
+        {
+            AppSettings.Instance.NumberSize += change;
+            TxtNumberStatus.Text = "번호 크기: " + (int)(AppSettings.Instance.NumberSize * 100) + "% · 다음 번호부터 적용";
+            TxtNumberStatus.Foreground = Brushes.LightGreen;
         }
 
         private void TxtStartNumber_KeyDown(object sender, KeyEventArgs e)

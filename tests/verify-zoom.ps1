@@ -29,11 +29,11 @@ $view.Reset()
 if ($view.ZoomRatio -ne 1) { throw 'Reset failed' }
 $pin = [Panseo.Views.PinnedCaptureWindow]::new($image)
 if ($pin.Content.Child -isnot [Panseo.Views.ZoomImageView]) { throw 'Pinned capture lacks zoom view' }
-if ($pin.Content.ContextMenu.Items.Count -ne 2) { throw 'Pinned capture menu changed' }
+if ($pin.Content.ContextMenu.Items.Count -ne 3) { throw 'Pinned capture menu changed' }
 $manual = [Panseo.Views.ManualWindow]::new()
 $document = $manual.Content.Document
 $text = [Windows.Documents.TextRange]::new($document.ContentStart,$document.ContentEnd).Text
-if ($text.Length -lt 1000 -or -not $text.Contains('Ctrl+Q') -or -not $text.Contains('Ctrl+F10')) { throw 'Offline manual is incomplete' }
+if ($text.Length -lt 1000 -or -not $text.Contains('Ctrl+Q') -or -not $text.Contains('Ctrl+F12')) { throw 'Offline manual is incomplete' }
 $icon = $assembly.GetType('Panseo.Helpers.AppIcon').GetMethod('Load').Invoke($null,@())
 try {
     if ($icon.Width -ne 32 -or $icon.Height -ne 32) { throw 'Embedded tray icon invalid' }
