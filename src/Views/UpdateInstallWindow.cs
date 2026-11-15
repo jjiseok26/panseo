@@ -31,6 +31,8 @@ namespace Panseo.Views
                 Padding = new Thickness(18, 5, 18, 5), Margin = new Thickness(0, 16, 0, 0) };
             _close.Click += (s, e) => Close();
             panel.Children.Add(_close);
+            panel.Children.Add(new TextBlock { Text = "© jiseok", TextAlignment = TextAlignment.Center,
+                Foreground = System.Windows.Media.Brushes.DimGray, Margin = new Thickness(0, 8, 0, 0) });
             Content = panel;
             Closing += (s, e) => { if (_installing) e.Cancel = true; };
             Closed += (s, e) => Application.Current.Shutdown(_exitCode);

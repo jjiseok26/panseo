@@ -7,7 +7,7 @@ using System.Windows.Media.Imaging;
 
 namespace Panseo.Views
 {
-    public sealed class ZoomImageView : Grid
+    public sealed class ZoomImageView : Canvas
     {
         private readonly BitmapSource _source;
         private readonly ScaleTransform _scale = new ScaleTransform();

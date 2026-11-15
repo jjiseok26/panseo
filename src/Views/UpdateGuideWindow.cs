@@ -37,8 +37,12 @@ namespace Panseo.Views
             var close = new Button { Content = "닫기", Padding = new Thickness(20, 6, 20, 6), Margin = new Thickness(6, 10, 6, 0) };
             close.Click += (s, e) => Close();
             actions.Children.Add(close);
-            DockPanel.SetDock(actions, Dock.Bottom);
-            root.Children.Add(actions);
+            var footer = new StackPanel();
+            footer.Children.Add(actions);
+            footer.Children.Add(new TextBlock { Text = "© jiseok", TextAlignment = TextAlignment.Center,
+                Foreground = Brushes.DimGray, Margin = new Thickness(6, 8, 6, 0) });
+            DockPanel.SetDock(footer, Dock.Bottom);
+            root.Children.Add(footer);
             root.Children.Add(new ScrollViewer { Content = CreateIllustratedGuide(), VerticalScrollBarVisibility = ScrollBarVisibility.Auto });
             Content = root;
             SetStatus(status);

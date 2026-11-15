@@ -21,7 +21,11 @@ try { $encoder.Save($stream) } finally { $stream.Dispose() }
 $window = [Panseo.Views.UpdateGuideWindow]::new('Checking')
 $update = $type.GetField('_update',[Reflection.BindingFlags]'Instance,NonPublic').GetValue($window)
 if ($update.IsEnabled) { throw 'Update was enabled before download verification' }
-$actions = $window.Content.Children[1]
+$footer = $window.Content.Children[1]
+$actions = $footer.Children[0]
+if (-not $footer.Children[1].Text.Contains('jiseok')) { throw 'Update window copyright missing' }
+$installer = [Panseo.Views.UpdateInstallWindow]::new([string[]]@())
+if (-not $installer.Content.Children[$installer.Content.Children.Count-1].Text.Contains('jiseok')) { throw 'Installer copyright missing' }
 if ($actions.Children[0] -ne $update -or $actions.Children[1] -isnot [Windows.Controls.Button]) { throw 'Update button must precede Close' }
 $script:updateClicked = $false
 $window.add_UpdateRequested([Action]{ $script:updateClicked = $true })

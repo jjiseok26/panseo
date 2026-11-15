@@ -30,8 +30,26 @@ if ($view.ZoomRatio -ne 1) { throw 'Reset failed' }
 $pin = [Panseo.Views.PinnedCaptureWindow]::new($image)
 if ($pin.Content.Child.Children[0] -isnot [Panseo.Views.ZoomImageView] -or $pin.Content.Child.Children[1] -isnot [Windows.Controls.Primitives.Thumb]) { throw 'Pinned capture lacks zoom or resize handle' }
 if ($pin.Content.ContextMenu.Items.Count -ne 3) { throw 'Pinned capture menu changed' }
+$redPixels = [byte[]]::new(320*200*4)
+for ($i=0; $i -lt $redPixels.Length; $i+=4) { $redPixels[$i+2]=255; $redPixels[$i+3]=255 }
+$redImage = [Windows.Media.Imaging.BitmapSource]::Create(320,200,96,96,[Windows.Media.PixelFormats]::Bgra32,$null,$redPixels,1280)
+$smallPin = [Panseo.Views.PinnedCaptureWindow]::new($redImage)
+$smallPin.Width = 162; $smallPin.Height = 102
+$content = $smallPin.Content
+$content.Measure([Windows.Size]::new(162,102))
+$content.Arrange([Windows.Rect]::new(0,0,162,102))
+$content.UpdateLayout()
+$rendered = [Windows.Media.Imaging.RenderTargetBitmap]::new(162,102,96,96,[Windows.Media.PixelFormats]::Pbgra32)
+$rendered.Render($content)
+$output = [byte[]]::new(162*102*4)
+$rendered.CopyPixels($output,162*4,0)
+foreach ($point in @(@(20,20),@(130,50),@(80,80))) {
+    $i = ($point[1]*162+$point[0])*4
+    if ($output[$i+2] -lt 240 -or $output[$i+1] -gt 10 -or $output[$i] -gt 10) { throw "Pinned capture shows black after shrinking at $point" }
+}
 $manual = [Panseo.Views.ManualWindow]::new()
-$document = $manual.Content.Document
+if (-not $manual.Content.Children[0].Text.Contains('jiseok')) { throw 'Manual copyright missing' }
+$document = $manual.Content.Children[1].Document
 $text = [Windows.Documents.TextRange]::new($document.ContentStart,$document.ContentEnd).Text
 if ($text.Length -lt 1000 -or -not $text.Contains('Ctrl+Q') -or -not $text.Contains('Ctrl+F12')) { throw 'Offline manual is incomplete' }
 $icon = $assembly.GetType('Panseo.Helpers.AppIcon').GetMethod('Load').Invoke($null,@())

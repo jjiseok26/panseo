@@ -33,7 +33,14 @@ namespace Panseo.Views
                     document.Blocks.Add(paragraph);
                 }
             }
-            Content = new FlowDocumentScrollViewer { Document = document, IsToolBarVisible = true, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
+            var root = new DockPanel();
+            var copyright = new TextBlock { Text = "© jiseok", TextAlignment = TextAlignment.Center,
+                Foreground = Brushes.DimGray, Background = Brushes.White, Padding = new Thickness(8) };
+            DockPanel.SetDock(copyright, Dock.Bottom);
+            root.Children.Add(copyright);
+            root.Children.Add(new FlowDocumentScrollViewer { Document = document, IsToolBarVisible = true,
+                VerticalScrollBarVisibility = ScrollBarVisibility.Auto });
+            Content = root;
         }
     }
 }
