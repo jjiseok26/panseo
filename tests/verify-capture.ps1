@@ -47,6 +47,10 @@ $selector.GetType().GetField('_start',$flags).SetValue($selector,[Windows.Point]
 [void]$drag.Invoke($selector,@([Windows.Point]::new(80,90)))
 $selection = $selector.GetType().GetField('_selection',$flags).GetValue($selector)
 if ($selection.Left -ne 10 -or $selection.Top -ne 10 -or $selection.Width -ne 70 -or $selection.Height -ne 80) { throw 'Selecting a new region failed' }
+$handles = $selector.GetType().GetField('_handles',$flags).GetValue($selector)
+if ($handles.Count -ne 8 -or @($handles | Where-Object { $_.Visibility -ne [Windows.Visibility]::Visible }).Count -ne 0) { throw 'Selection resize handles are hidden' }
+$confirm = $selector.GetType().GetField('_confirm',$flags).GetValue($selector)
+if ($confirm.Margin.Left -le $selection.Right -or $confirm.Margin.Top -ne $selection.Top) { throw 'Confirm button is not beside selection' }
 [Panseo.Models.AppSettings]::Instance.DrawingColor = [Windows.Media.Colors]::Red
 [Panseo.Models.AppSettings]::Instance.StrokeThickness = 4
 $editor = [Panseo.Views.CaptureEditorWindow]::new($image)
@@ -77,4 +81,10 @@ $roundTrip = [Windows.Media.Imaging.BitmapImage]::new([Uri]::new($path))
 if ($roundTrip.PixelWidth -ne 320 -or $roundTrip.PixelHeight -ne 200) { throw 'PNG roundtrip failed' }
 $pinned = [Panseo.Views.PinnedCaptureWindow]::new($result)
 if (-not $pinned.Topmost -or $pinned.Content.ContextMenu.Items.Count -ne 3 -or $pinned.Content.ContextMenu.Items[0].Header -ne '저장하기' -or $pinned.Content.ContextMenu.Items[1].Header -ne '복사하기' -or $pinned.Content.ContextMenu.Items[2].Header -ne '닫기') { throw 'Pinned menu failed' }
+$grip = $pinned.Content.Child.Children[1]
+$oldWidth = $pinned.Width
+$resize = [Windows.Controls.Primitives.DragDeltaEventArgs]::new(40,10)
+$resize.RoutedEvent = [Windows.Controls.Primitives.Thumb]::DragDeltaEvent
+$grip.RaiseEvent($resize)
+if ($pinned.Width -le $oldWidth -or [Math]::Abs(($pinned.Width-2)/($pinned.Height-2)-1.6) -gt 0.01) { throw 'Pinned capture window resize failed' }
 'PASS: scaled/clamped region crop, five annotation tools, undo/redo, original-pixel PNG export, floating context menu.'

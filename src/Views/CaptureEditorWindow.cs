@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -465,9 +466,35 @@ namespace Panseo.Views
                 (SystemParameters.WorkArea.Height - 40) / image.PixelHeight));
             Width = image.PixelWidth * scale + 2;
             Height = image.PixelHeight * scale + 2;
+            MinWidth = 120;
+            MinHeight = 80;
+            var view = new ZoomImageView(image, false);
+            var content = new Grid();
+            content.Children.Add(view);
+            var grip = new Thumb { Width = 24, Height = 24, HorizontalAlignment = HorizontalAlignment.Right,
+                VerticalAlignment = VerticalAlignment.Bottom, Cursor = Cursors.SizeNWSE };
+            var gripBorder = new FrameworkElementFactory(typeof(Border));
+            gripBorder.SetValue(Border.BackgroundProperty, Brushes.DeepSkyBlue);
+            gripBorder.SetValue(Border.CornerRadiusProperty, new CornerRadius(3));
+            var gripGlyph = new FrameworkElementFactory(typeof(TextBlock));
+            gripGlyph.SetValue(TextBlock.TextProperty, "◢");
+            gripGlyph.SetValue(TextBlock.ForegroundProperty, Brushes.White);
+            gripGlyph.SetValue(TextBlock.HorizontalAlignmentProperty, HorizontalAlignment.Center);
+            gripGlyph.SetValue(TextBlock.VerticalAlignmentProperty, VerticalAlignment.Center);
+            gripBorder.AppendChild(gripGlyph);
+            grip.Template = new ControlTemplate(typeof(Thumb)) { VisualTree = gripBorder };
+            grip.DragDelta += (s, e) =>
+            {
+                double ratio = (double)image.PixelWidth / image.PixelHeight;
+                double delta = Math.Abs(e.HorizontalChange) >= Math.Abs(e.VerticalChange)
+                    ? e.HorizontalChange : e.VerticalChange * ratio;
+                Width = Math.Max(MinWidth, Width + delta);
+                Height = Math.Max(MinHeight, (Width - 2) / ratio + 2);
+            };
+            content.Children.Add(grip);
             var border = new Border { BorderBrush = Brushes.DeepSkyBlue, BorderThickness = new Thickness(1),
-                Child = new ZoomImageView(image, false), Cursor = Cursors.SizeAll,
-                ToolTip = "휠: 확대/축소 · Ctrl+드래그: 이미지 이동 · 드래그: 창 이동 · 더블클릭: 기본 크기 · 우클릭: 저장/복사/닫기" };
+                Child = content, Cursor = Cursors.SizeAll,
+                ToolTip = "오른쪽 아래 조절점: 창 크기 · 휠: 확대/축소 · Ctrl+드래그: 이미지 이동 · 드래그: 창 이동 · 우클릭: 저장/복사/닫기" };
             var menu = new ContextMenu();
             var save = new MenuItem { Header = "저장하기" };
             save.Click += (s, e) => CaptureFiles.Save(this, _image);
@@ -483,9 +510,9 @@ namespace Panseo.Views
             menu.Items.Add(copy);
             menu.Items.Add(close);
             border.ContextMenu = menu;
-            border.MouseLeftButtonDown += (s, e) => Win32.TryDragMove(this);
+            border.MouseLeftButtonDown += (s, e) => { if (!grip.IsMouseOver) Win32.TryDragMove(this); };
             Content = border;
-            KeyDown += (s, e) => { if (e.Key == Key.D0 || e.Key == Key.NumPad0) ((ZoomImageView)border.Child).Reset(); };
+            KeyDown += (s, e) => { if (e.Key == Key.D0 || e.Key == Key.NumPad0) view.Reset(); };
         }
     }
 }

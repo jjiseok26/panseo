@@ -28,7 +28,7 @@ if ([double]::IsNaN($view.ZoomRatio)) { throw 'Invalid scale accepted' }
 $view.Reset()
 if ($view.ZoomRatio -ne 1) { throw 'Reset failed' }
 $pin = [Panseo.Views.PinnedCaptureWindow]::new($image)
-if ($pin.Content.Child -isnot [Panseo.Views.ZoomImageView]) { throw 'Pinned capture lacks zoom view' }
+if ($pin.Content.Child.Children[0] -isnot [Panseo.Views.ZoomImageView] -or $pin.Content.Child.Children[1] -isnot [Windows.Controls.Primitives.Thumb]) { throw 'Pinned capture lacks zoom or resize handle' }
 if ($pin.Content.ContextMenu.Items.Count -ne 3) { throw 'Pinned capture menu changed' }
 $manual = [Panseo.Views.ManualWindow]::new()
 $document = $manual.Content.Document

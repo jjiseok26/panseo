@@ -919,6 +919,8 @@ namespace Panseo.Views
             _isCapturing = true;
             bool visible = IsVisible;
             var pointer = AppSettings.Instance.PointerShape;
+            var cursor = System.Windows.Forms.Cursor.Position;
+            var bounds = System.Windows.Forms.Screen.FromPoint(cursor).Bounds;
             try
             {
                 SelectTool(DrawingTool.None);
@@ -926,8 +928,7 @@ namespace Panseo.Views
                 CloseMenu();
                 Hide();
                 await Task.Delay(350); // Allow existing click ripples to finish before freezing the screen.
-                var bounds = System.Windows.Forms.Screen.FromPoint(System.Windows.Forms.Cursor.Position).Bounds;
-                _zoomWindow = new ScreenZoomWindow(ScreenCapture.Take(bounds), bounds);
+                _zoomWindow = new ScreenZoomWindow(ScreenCapture.Take(bounds), bounds, cursor);
                 _zoomWindow.Closed += (s, e) =>
                 {
                     _zoomWindow = null;

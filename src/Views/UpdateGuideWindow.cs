@@ -60,7 +60,7 @@ namespace Panseo.Views
             Label(zoom, 84, 40, "휠 →", 16);
             Box(zoom, 150, 12, 98, 78, "✏ 200%", Brushes.LightSkyBlue);
             cards.Children.Add(Card("Ctrl+Q · 화면 확대/축소", zoom,
-                "Ctrl+Q로 들어가 휠로 확대/축소합니다. 펜·도형·글자·번호 도구로 확대 화면에 그릴 수 있습니다. 그리면서 Ctrl+드래그로 이동하고, 저장·고정 후 Esc로 닫으세요. 진입 순간의 정지 화면입니다."));
+                "Ctrl+Q로 들어가면 포인터 위치를 중심으로 2배 확대됩니다. 휠로 조절하고 펜·도형·글자·번호 도구로 그릴 수 있습니다. 그리면서 Ctrl+드래그로 이동하고, 저장·고정 후 Esc로 닫으세요."));
             var numbers = Picture();
             Label(numbers, 12, 2, "시작번호", 12);
             Box(numbers, 82, 0, 52, 25, "5", Brushes.AliceBlue);
@@ -77,7 +77,7 @@ namespace Panseo.Views
             Label(pin, 35, 48, "휠 ↕", 16);
             Label(pin, 112, 50, "Ctrl + 드래그", 12);
             cards.Children.Add(Card("고정 캡처도 확대/축소", pin,
-                "Ctrl+F11로 영역을 고정합니다. 이미지 위에서 휠로 확대하고 Ctrl+드래그로 안쪽을 이동합니다. 우클릭하면 저장하기·복사하기·닫기가 나옵니다."));
+                "Ctrl+F11로 영역을 고정합니다. 오른쪽 아래 조절점으로 창 크기를 바꾸고, 이미지 위에서 휠로 확대합니다. 우클릭하면 저장하기·복사하기·닫기가 나옵니다."));
             var menu = Picture();
             Box(menu, 6, 30, 74, 36, "SHA-256", Brushes.LightSteelBlue);
             Label(menu, 88, 37, "→", 20);

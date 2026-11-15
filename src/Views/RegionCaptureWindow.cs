@@ -16,6 +16,7 @@ namespace Panseo.Views
         private readonly Grid _surface;
         private readonly Path _shade;
         private readonly Rectangle _outline;
+        private readonly Rectangle[] _handles = new Rectangle[8];
         private readonly Button _confirm;
         private Point _start;
         private Rect _selection;
@@ -42,6 +43,12 @@ namespace Panseo.Views
             var overlay = new Canvas { IsHitTestVisible = false };
             _outline = new Rectangle { Stroke = Brushes.DeepSkyBlue, StrokeThickness = 2, Visibility = Visibility.Collapsed };
             overlay.Children.Add(_outline);
+            for (int i = 0; i < _handles.Length; i++)
+            {
+                _handles[i] = new Rectangle { Width = 10, Height = 10, Fill = Brushes.White,
+                    Stroke = Brushes.DeepSkyBlue, StrokeThickness = 2, Visibility = Visibility.Collapsed };
+                overlay.Children.Add(_handles[i]);
+            }
             _surface.Children.Add(overlay);
             _surface.Children.Add(new TextBlock
             {
@@ -51,9 +58,9 @@ namespace Panseo.Views
                 HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Top,
                 Margin = new Thickness(12), IsHitTestVisible = false
             });
-            _confirm = new Button { Content = "캡처 확정 (Enter)", Padding = new Thickness(18, 8, 18, 8),
-                IsEnabled = false, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Bottom,
-                Margin = new Thickness(12), Cursor = Cursors.Hand };
+            _confirm = new Button { Content = "캡처 확정 (Enter)", Width = 160, Height = 40,
+                IsEnabled = false, Visibility = Visibility.Collapsed,
+                HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Top, Cursor = Cursors.Hand };
             _confirm.Click += (s, e) => Confirm(snapshot);
             _surface.Children.Add(_confirm);
             Content = _surface;
@@ -162,7 +169,32 @@ namespace Panseo.Views
             _outline.Height = rect.Height;
             Canvas.SetLeft(_outline, rect.Left);
             Canvas.SetTop(_outline, rect.Top);
-            if (_confirm != null) _confirm.IsEnabled = rect.Width >= 3 && rect.Height >= 3;
+            bool valid = rect.Width >= 3 && rect.Height >= 3;
+            double[] xs = { rect.Left, rect.Left + rect.Width / 2, rect.Right };
+            double[] ys = { rect.Top, rect.Top + rect.Height / 2, rect.Bottom };
+            int[,] positions = { { 0, 0 }, { 1, 0 }, { 2, 0 }, { 0, 1 }, { 2, 1 }, { 0, 2 }, { 1, 2 }, { 2, 2 } };
+            for (int i = 0; i < _handles.Length; i++)
+            {
+                _handles[i].Visibility = valid ? Visibility.Visible : Visibility.Collapsed;
+                Canvas.SetLeft(_handles[i], xs[positions[i, 0]] - 5);
+                Canvas.SetTop(_handles[i], ys[positions[i, 1]] - 5);
+            }
+            if (_confirm != null)
+            {
+                _confirm.IsEnabled = valid;
+                _confirm.Visibility = valid ? Visibility.Visible : Visibility.Collapsed;
+                if (valid)
+                {
+                    double x, y;
+                    if (rect.Right + 170 <= _surface.ActualWidth) { x = rect.Right + 10; y = rect.Top; }
+                    else if (rect.Left >= 170) { x = rect.Left - 170; y = rect.Top; }
+                    else if (rect.Bottom + 50 <= _surface.ActualHeight) { x = rect.Left; y = rect.Bottom + 10; }
+                    else { x = rect.Left; y = rect.Top - 50; }
+                    _confirm.Margin = new Thickness(
+                        Math.Max(0, Math.Min(_surface.ActualWidth - 160, x)),
+                        Math.Max(0, Math.Min(_surface.ActualHeight - 40, y)), 0, 0);
+                }
+            }
         }
 
         internal static BitmapSource Crop(BitmapSource source, Rect selection, Size viewport)
