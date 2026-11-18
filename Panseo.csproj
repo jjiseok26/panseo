@@ -79,6 +79,7 @@
     <Compile Include="src\Views\ManualWindow.cs" />
     <Compile Include="src\Helpers\ScreenCapture.cs" />
     <Compile Include="src\Helpers\CaptureTargetDetector.cs" />
+    <Compile Include="src\Helpers\ColorPicker.cs" />
     <Compile Include="src\Helpers\AppIcon.cs" />
     <EmbeddedResource Include="panseo.ico"><LogicalName>Panseo.TrayIcon.ico</LogicalName></EmbeddedResource>
     <EmbeddedResource Include="docs\Manual.txt"><LogicalName>Panseo.Manual.txt</LogicalName></EmbeddedResource>

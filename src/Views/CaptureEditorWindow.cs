@@ -40,6 +40,7 @@ namespace Panseo.Views
         private long _nextNumber = 1;
         private readonly TextBox _startNumberInput;
         private readonly TextBlock _strokeValue;
+        private readonly Slider _strokeSlider;
 
         public CaptureEditorWindow(BitmapSource image) : this(image, false) { }
 
@@ -94,18 +95,19 @@ namespace Panseo.Views
             AddColor(tools, Colors.DeepSkyBlue, "파랑");
             AddColor(tools, Colors.White, "흰색");
             AddColor(tools, Colors.Black, "검정");
+            AddButton(tools, "🎨 색상 선택", ChooseDrawingColor);
             tools.Children.Add(new TextBlock { Text = "굵기", Foreground = Foreground,
                 VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(8, 0, 3, 0) });
-            var stroke = new Slider { Minimum = 2, Maximum = 24, Value = AppSettings.Instance.StrokeThickness,
+            _strokeSlider = new Slider { Minimum = 2, Maximum = 24, Value = AppSettings.Instance.StrokeThickness,
                 Width = 105, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(3) };
-            _strokeValue = new TextBlock { Text = ((int)stroke.Value).ToString(), Foreground = Foreground,
+            _strokeValue = new TextBlock { Text = ((int)_strokeSlider.Value).ToString(), Foreground = Foreground,
                 Width = 24, VerticalAlignment = VerticalAlignment.Center };
-            stroke.ValueChanged += (s, e) =>
+            _strokeSlider.ValueChanged += (s, e) =>
             {
                 AppSettings.Instance.StrokeThickness = e.NewValue;
                 _strokeValue.Text = ((int)e.NewValue).ToString();
             };
-            tools.Children.Add(stroke);
+            tools.Children.Add(_strokeSlider);
             tools.Children.Add(_strokeValue);
             if (screenZoom)
             {
@@ -139,6 +141,12 @@ namespace Panseo.Views
             _canvas.MouseMove += CanvasMouseMove;
             _canvas.MouseLeftButtonUp += (s, e) => FinishDrawing();
             _canvas.LostMouseCapture += (s, e) => FinishDrawing();
+            if (!screenZoom) _canvas.PreviewMouseWheel += (s, e) =>
+            {
+                _strokeSlider.Value = Math.Max(_strokeSlider.Minimum, Math.Min(_strokeSlider.Maximum,
+                    _strokeSlider.Value + Math.Sign(e.Delta)));
+                e.Handled = true;
+            };
             KeyDown += EditorKeyDown;
             if (screenZoom)
             {
@@ -172,6 +180,12 @@ namespace Panseo.Views
                 Style = CreateMaterialStyle(typeof(Button)) };
             button.Click += (s, e) => AppSettings.Instance.DrawingColor = color;
             panel.Children.Add(button);
+        }
+
+        private void ChooseDrawingColor()
+        {
+            var color = ColorPicker.Choose(this, AppSettings.Instance.DrawingColor);
+            if (color.HasValue) AppSettings.Instance.DrawingColor = color.Value;
         }
 
         private static Style CreateMaterialStyle(Type controlType)

@@ -73,11 +73,17 @@ $editor = [Panseo.Views.CaptureEditorWindow]::new($image)
 $toolPanel = $editor.Content.Children[0]
 $colors = @($toolPanel.Children | Where-Object { $_ -is [Windows.Controls.Button] -and $_.ToolTip -eq '빨강' })
 $stroke = @($toolPanel.Children | Where-Object { $_ -is [Windows.Controls.Slider] })
-if ($colors.Count -ne 1 -or $stroke.Count -ne 1) { throw 'Capture color or stroke controls missing' }
+$picker = @($toolPanel.Children | Where-Object { $_ -is [Windows.Controls.Button] -and $_.Content -eq '🎨 색상 선택' })
+if ($colors.Count -ne 1 -or $stroke.Count -ne 1 -or $picker.Count -ne 1) { throw 'Capture color, picker, or stroke controls missing' }
 $colors[0].RaiseEvent([Windows.RoutedEventArgs]::new([Windows.Controls.Primitives.ButtonBase]::ClickEvent))
 if ([Panseo.Models.AppSettings]::Instance.DrawingColor -ne [Windows.Media.Colors]::Red) { throw 'Capture color selection failed' }
 $stroke[0].Value = 12
 if ([Panseo.Models.AppSettings]::Instance.StrokeThickness -ne 12) { throw 'Capture stroke slider failed' }
+$canvas = $editor.GetType().GetField('_canvas', $flags).GetValue($editor)
+$wheel = [Windows.Input.MouseWheelEventArgs]::new([Windows.Input.Mouse]::PrimaryDevice,0,120)
+$wheel.RoutedEvent = [Windows.Input.Mouse]::PreviewMouseWheelEvent
+$canvas.RaiseEvent($wheel)
+if (-not $wheel.Handled -or $stroke[0].Value -ne 13) { throw 'Capture wheel stroke adjustment failed' }
 [Panseo.Models.AppSettings]::Instance.StrokeThickness = 4
 $toolButton = @($toolPanel.Children | Where-Object { $_ -is [Windows.Controls.RadioButton] })[0]
 $actionButton = @($toolPanel.Children | Where-Object { $_ -is [Windows.Controls.Button] })[0]

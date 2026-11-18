@@ -275,11 +275,9 @@ namespace Panseo.Views
                 // 글자 넣기 상자에서 타이핑 중일 때는 텍스트 입력을 위해 단축키 가로채기 통과
                 if (!AppSettings.Instance.IsTextEditing)
                 {
-                    if (AppSettings.Instance.PointerShape != PointerShape.None &&
-                        (Keyboard.Modifiers & (ModifierKeys.Control | ModifierKeys.Alt)) == ModifierKeys.None &&
-                        (vk == 0xBB || vk == 0x6B || vk == 0xBD || vk == 0x6D))
+                    int step = PointerSizeStep(vk, Keyboard.Modifiers);
+                    if (AppSettings.Instance.PointerShape != PointerShape.None && step != 0)
                     {
-                        int step = vk == 0xBB || vk == 0x6B ? 5 : -5;
                         Dispatcher.BeginInvoke((Action)(() => SliderPointerSize.Value =
                             NextPointerSize(SliderPointerSize.Value, step)));
                         return new IntPtr(1);
@@ -309,6 +307,14 @@ namespace Panseo.Views
         internal static double NextPointerSize(double current, int step)
         {
             return Math.Max(20, Math.Min(160, current + step));
+        }
+
+        internal static int PointerSizeStep(int key, ModifierKeys modifiers)
+        {
+            if ((modifiers & ModifierKeys.Control) == 0 || (modifiers & ModifierKeys.Alt) != 0) return 0;
+            if (key == 0xBB || key == 0x6B) return 5;
+            if (key == 0xBD || key == 0x6D) return -5;
+            return 0;
         }
 
         private bool HandleDrawingShortcut(int vk)
@@ -746,6 +752,12 @@ namespace Panseo.Views
             }
         }
 
+        private void BtnPointerColorPicker_Click(object sender, RoutedEventArgs e)
+        {
+            var color = ColorPicker.Choose(this, AppSettings.Instance.PointerColor);
+            if (color.HasValue) AppSettings.Instance.PointerColor = color.Value;
+        }
+
         private void ChkClickRipple_Changed(object sender, RoutedEventArgs e)
         {
             AppSettings.Instance.IsClickRippleEnabled = ChkClickRipple.IsChecked == true;
@@ -853,6 +865,12 @@ namespace Panseo.Views
                     SetDrawingColor(color);
                 }
             }
+        }
+
+        private void BtnDrawingColorPicker_Click(object sender, RoutedEventArgs e)
+        {
+            var color = ColorPicker.Choose(this, AppSettings.Instance.DrawingColor);
+            if (color.HasValue) SetDrawingColor(color.Value);
         }
 
         public void ToggleBlackboard()

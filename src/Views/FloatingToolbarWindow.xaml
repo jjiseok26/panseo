@@ -240,7 +240,7 @@
                                         <ColumnDefinition Width="Auto" />
                                     </Grid.ColumnDefinitions>
                                     <TextBlock Grid.Column="0" Text="크기" Foreground="{StaticResource TextSecondaryBrush}" FontSize="10" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                                    <Slider Grid.Column="1" x:Name="SliderPointerSize" Minimum="20" Maximum="160" Value="65" VerticalAlignment="Center" ValueChanged="SliderPointerSize_ValueChanged"/>
+                                    <Slider Grid.Column="1" x:Name="SliderPointerSize" Minimum="20" Maximum="160" Value="65" VerticalAlignment="Center" ValueChanged="SliderPointerSize_ValueChanged" ToolTip="Ctrl++ / Ctrl+− 로 포인터 크기 변경"/>
                                     <TextBlock Grid.Column="2" x:Name="TxtPointerSizeVal" Text="65" Foreground="#FFFFFF" FontSize="10" Width="24" TextAlignment="Right" VerticalAlignment="Center"/>
                                 </Grid>
 
@@ -252,6 +252,7 @@
                                     <Button Background="#FF29B6F6" Style="{StaticResource ColorCircleButtonStyle}" Tag="#FF29B6F6" Click="BtnPointerColor_Click" ToolTip="스카이 블루"/>
                                     <Button Background="#FFA855F7" Style="{StaticResource ColorCircleButtonStyle}" Tag="#FFA855F7" Click="BtnPointerColor_Click" ToolTip="보라"/>
                                     <Button Background="#FFFF9800" Style="{StaticResource ColorCircleButtonStyle}" Tag="#FFFF9800" Click="BtnPointerColor_Click" ToolTip="주황"/>
+                                    <Button x:Name="BtnPointerColorPicker" Content="🎨 선택" Style="{StaticResource SidebarButtonStyle}" Height="25" Padding="5,1" Click="BtnPointerColorPicker_Click" ToolTip="원하는 포인터 색상 선택"/>
                                 </StackPanel>
                             </StackPanel>
                         </Border>
@@ -315,6 +316,7 @@
                                     <Button Background="#FF29B6F6" Style="{StaticResource ColorCircleButtonStyle}" Tag="#FF29B6F6" Click="BtnDrawingColor_Click" ToolTip="파랑 [단축키: Ctrl+4]"/>
                                     <Button Background="#FFFFFFFF" Style="{StaticResource ColorCircleButtonStyle}" Tag="#FFFFFFFF" Click="BtnDrawingColor_Click" ToolTip="흰색 [단축키: Ctrl+5]"/>
                                     <Button Background="#FF1E1E1E" Style="{StaticResource ColorCircleButtonStyle}" Tag="#FF1E1E1E" Click="BtnDrawingColor_Click" ToolTip="검정 [단축키: Ctrl+6]"/>
+                                    <Button x:Name="BtnDrawingColorPicker" Content="🎨 선택" Style="{StaticResource SidebarButtonStyle}" Height="25" Padding="5,1" Click="BtnDrawingColorPicker_Click" ToolTip="원하는 판서 색상 선택"/>
                                 </StackPanel>
                             </StackPanel>
                         </Border>

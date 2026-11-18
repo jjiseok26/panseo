@@ -11,7 +11,7 @@ $card = $window.FindName('MenuCard')
 $card.Measure([Windows.Size]::new($window.Width, $window.Height))
 $card.Arrange([Windows.Rect]::new(0, 0, $window.Width, $window.Height))
 $card.UpdateLayout()
-foreach ($name in 'RbPointerCircle', 'RbToolMouse', 'RbToolEraser', 'BtnSaveScreenshot', 'BtnClearAll', 'BtnPinScreenshot', 'BtnScreenZoom', 'BtnManual', 'BtnUpdateCheck', 'RbToolNumber', 'BtnResetNumber', 'TxtStartNumber', 'BtnApplyStartNumber', 'BtnNumberSmaller', 'BtnNumberLarger', 'ChkBlackboard') {
+foreach ($name in 'RbPointerCircle', 'RbToolMouse', 'RbToolEraser', 'BtnSaveScreenshot', 'BtnClearAll', 'BtnPinScreenshot', 'BtnScreenZoom', 'BtnManual', 'BtnUpdateCheck', 'RbToolNumber', 'BtnResetNumber', 'TxtStartNumber', 'BtnApplyStartNumber', 'BtnNumberSmaller', 'BtnNumberLarger', 'ChkBlackboard', 'BtnPointerColorPicker', 'BtnDrawingColorPicker') {
     $control = $window.FindName($name)
     $rect = $control.TransformToAncestor($card).TransformBounds([Windows.Rect]::new(0, 0, $control.ActualWidth, $control.ActualHeight))
     if ($rect.Width -le 0 -or $rect.Height -le 0 -or $rect.Right -gt $card.ActualWidth + 1 -or $rect.Bottom -gt $card.ActualHeight + 1) { throw "Control clipped: $name ($rect)" }
@@ -30,6 +30,11 @@ if ($shortcutSource -notmatch '_zoomHotkeyRegistered = Win32.RegisterHotKey' -or
 $zoomKeys = $window.GetType().GetMethod('IsZoomKeyCombination',[Reflection.BindingFlags]'Static,NonPublic')
 $pointerSize = $window.GetType().GetMethod('NextPointerSize',[Reflection.BindingFlags]'Static,NonPublic')
 if ($pointerSize.Invoke($null,@([double]65,[int]5)) -ne 70 -or $pointerSize.Invoke($null,@([double]160,[int]5)) -ne 160 -or $pointerSize.Invoke($null,@([double]20,[int]-5)) -ne 20) { throw 'Pointer size keys exceed slider range' }
+$pointerKey = $window.GetType().GetMethod('PointerSizeStep',[Reflection.BindingFlags]'Static,NonPublic')
+if ($pointerKey.Invoke($null,@([int]0xBB,[Windows.Input.ModifierKeys]::None)) -ne 0 -or
+    $pointerKey.Invoke($null,@([int]0xBD,[Windows.Input.ModifierKeys]::None)) -ne 0 -or
+    $pointerKey.Invoke($null,@([int]0x6B,[Windows.Input.ModifierKeys]::Control)) -ne 5 -or
+    $pointerKey.Invoke($null,@([int]0x6D,[Windows.Input.ModifierKeys]::Control)) -ne -5) { throw 'Pointer size keys intercept ordinary typing' }
 $thickness = [Panseo.Views.OverlayWindow].GetMethod('NextThickness',[Reflection.BindingFlags]'Static,NonPublic')
 if ($thickness.Invoke($null,@([double]4,[int]120)) -ne 5 -or $thickness.Invoke($null,@([double]2,[int]-120)) -ne 2 -or $thickness.Invoke($null,@([double]24,[int]120)) -ne 24) { throw 'Drawing wheel thickness bounds failed' }
 foreach ($key in 0x31,0x61) {
