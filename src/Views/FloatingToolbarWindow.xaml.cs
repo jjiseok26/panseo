@@ -106,7 +106,7 @@ namespace Panseo.Views
                 _captureHotkeyRegistered = Win32.RegisterHotKey(helper.Handle, HOTKEY_ID_CAPTURE, 0x4000, VK_F1);
                 _pinHotkeyRegistered = Win32.RegisterHotKey(helper.Handle, HOTKEY_ID_PIN, 0x4000, VK_F3);
                 Win32.RegisterHotKey(helper.Handle, HOTKEY_ID_MOUSE, MOD_CONTROL, 0x4D);
-                Win32.RegisterHotKey(helper.Handle, HOTKEY_ID_ZOOM, MOD_CONTROL | 0x4000, 0x51);
+                Win32.RegisterHotKey(helper.Handle, HOTKEY_ID_ZOOM, MOD_CONTROL | 0x4000, 0x31);
                 for (int i = 0; i < PointerShortcutShapes.Length; i++)
                 {
                     Win32.RegisterHotKey(helper.Handle, HOTKEY_ID_POINTER_FIRST + i, MOD_CONTROL, (uint)(0x74 + i)); // Ctrl+F5 ~ F9
@@ -278,6 +278,12 @@ namespace Panseo.Views
                 return false;
             }
 
+            if (Keyboard.Modifiers == (ModifierKeys.Control | ModifierKeys.Shift) && (vk == 0x31 || vk == 0x61))
+            {
+                Dispatcher.BeginInvoke((Action)(() => SetDrawingColor((Color)ColorConverter.ConvertFromString("#FFFF3B30"))));
+                return true;
+            }
+
             // 도구와 색상 단축키는 Ctrl 조합만 처리한다.
             if (Keyboard.Modifiers != ModifierKeys.Control) return false;
 
@@ -346,13 +352,7 @@ namespace Panseo.Views
                 return true;
             }
 
-            // 색상 팔레트 단축키 (숫자 키 1 ~ 6 및 넘패드 1 ~ 6)
-            // 1: 빨강
-            if (vk == 0x31 || vk == 0x61)
-            {
-                Dispatcher.BeginInvoke((Action)(() => SetDrawingColor((Color)ColorConverter.ConvertFromString("#FFFF3B30"))));
-                return true;
-            }
+            // 색상 팔레트 단축키 (숫자 키 2 ~ 6 및 넘패드 2 ~ 6)
             // 2: 노랑
             if (vk == 0x32 || vk == 0x62)
             {

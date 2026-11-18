@@ -178,7 +178,7 @@ namespace Panseo
                     _toolbarWindow.Dispatcher.Invoke((Action)(() => _toolbarWindow.ToggleBlackboard()));
                 }));
 
-                contextMenu.MenuItems.Add(new MenuItem("확대/축소 (Ctrl+Q)", (s, ev) => _toolbarWindow.ToggleScreenZoom()));
+                contextMenu.MenuItems.Add(new MenuItem("확대/축소 (Ctrl+1)", (s, ev) => _toolbarWindow.ToggleScreenZoom()));
                 contextMenu.MenuItems.Add(new MenuItem("사용 설명서", (s, ev) => _toolbarWindow.ShowManual()));
                 contextMenu.MenuItems.Add(new MenuItem("업데이트 확인", (s, ev) => CheckForUpdates(true)));
                 contextMenu.MenuItems.Add("-");

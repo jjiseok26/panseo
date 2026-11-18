@@ -63,8 +63,8 @@ namespace Panseo.Views
             Box(zoom, 12, 32, 58, 40, "100%", Brushes.LightSteelBlue);
             Label(zoom, 84, 40, "휠 →", 16);
             Box(zoom, 150, 12, 98, 78, "✏ 200%", Brushes.LightSkyBlue);
-            cards.Children.Add(Card("Ctrl+Q · 화면 확대/축소", zoom,
-                "Ctrl+Q로 들어가면 포인터 위치를 중심으로 2배 확대됩니다. 휠로 조절하고 펜·도형·글자·번호 도구로 그릴 수 있습니다. 그리면서 Ctrl+드래그로 이동하고, 저장·고정 후 Esc로 닫으세요."));
+            cards.Children.Add(Card("Ctrl+1 · 화면 확대/축소", zoom,
+                "Ctrl+1로 들어가면 포인터 위치를 중심으로 2배 확대됩니다. 휠로 조절하고 펜·도형·글자·번호 도구로 그릴 수 있습니다. 그리면서 Ctrl+드래그로 이동하고, 저장·고정 후 Esc로 닫으세요."));
             var numbers = Picture();
             Label(numbers, 12, 2, "시작번호", 12);
             Box(numbers, 82, 0, 52, 25, "5", Brushes.AliceBlue);

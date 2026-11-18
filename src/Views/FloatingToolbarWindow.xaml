@@ -309,7 +309,7 @@
 
                                 <!-- 판서 색상 팔레트 -->
                                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,4,0,2">
-                                    <Button Background="#FFFF3B30" Style="{StaticResource ColorCircleButtonStyle}" Tag="#FFFF3B30" Click="BtnDrawingColor_Click" ToolTip="빨강 [단축키: Ctrl+1]"/>
+                                    <Button Background="#FFFF3B30" Style="{StaticResource ColorCircleButtonStyle}" Tag="#FFFF3B30" Click="BtnDrawingColor_Click" ToolTip="빨강 [단축키: Ctrl+Shift+1]"/>
                                     <Button Background="#FFFFEB3B" Style="{StaticResource ColorCircleButtonStyle}" Tag="#FFFFEB3B" Click="BtnDrawingColor_Click" ToolTip="노랑 [단축키: Ctrl+2]"/>
                                     <Button Background="#FF00E676" Style="{StaticResource ColorCircleButtonStyle}" Tag="#FF00E676" Click="BtnDrawingColor_Click" ToolTip="초록 [단축키: Ctrl+3]"/>
                                     <Button Background="#FF29B6F6" Style="{StaticResource ColorCircleButtonStyle}" Tag="#FF29B6F6" Click="BtnDrawingColor_Click" ToolTip="파랑 [단축키: Ctrl+4]"/>
@@ -333,7 +333,7 @@
                                         <TextBlock TextAlignment="Center" FontSize="10">🧹 전체 지우기<LineBreak/><Run Text="Ctrl+Delete" FontSize="9"/></TextBlock>
                                     </Button>
                                     <Button x:Name="BtnScreenZoom" Style="{StaticResource SidebarButtonStyle}" Height="38" Padding="4,2" Click="BtnScreenZoom_Click" ToolTip="현재 화면을 휠로 확대/축소">
-                                        <TextBlock TextAlignment="Center" FontSize="10">🔍 확대/축소<LineBreak/><Run Text="Ctrl+Q" FontSize="9"/></TextBlock>
+                                        <TextBlock TextAlignment="Center" FontSize="10">🔍 확대/축소<LineBreak/><Run Text="Ctrl+1" FontSize="9"/></TextBlock>
                                     </Button>
                                     <Button x:Name="BtnPinScreenshot" Style="{StaticResource SidebarButtonStyle}" Height="38" Padding="4,2" Click="BtnPinScreenshot_Click" ToolTip="자동 영역을 조정해 고정하고 클립보드에 복사 (F3)">
                                         <TextBlock TextAlignment="Center" FontSize="10">📌 영역캡처 고정<LineBreak/><Run Text="F3" FontSize="9"/></TextBlock>

@@ -51,13 +51,13 @@ namespace Panseo.Views
             Height = Math.Min(SystemParameters.WorkArea.Height - 30, Math.Max(400, image.PixelHeight + 160));
             MinWidth = 320;
             MinHeight = 240;
-            Background = new SolidColorBrush(Color.FromRgb(26, 26, 38));
-            Foreground = Brushes.White;
-            var root = new Grid();
+            Background = new SolidColorBrush(Color.FromRgb(32, 33, 36));
+            Foreground = new SolidColorBrush(Color.FromRgb(241, 243, 244));
+            var root = new Grid { Background = Background };
             root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
             root.RowDefinitions.Add(new RowDefinition());
             root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-            var tools = new WrapPanel { Margin = new Thickness(8) };
+            var tools = new WrapPanel { Margin = new Thickness(8), Background = new SolidColorBrush(Color.FromRgb(48, 49, 52)) };
             AddTool(tools, "이동 Ctrl+M", DrawingTool.None);
             AddTool(tools, "펜 Ctrl+P", DrawingTool.Pen);
             AddTool(tools, "형광펜 Ctrl+H", DrawingTool.Highlighter);
@@ -71,7 +71,9 @@ namespace Panseo.Views
             AddButton(tools, "번호 1부터", ResetNumbering);
             var numberControls = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(3) };
             numberControls.Children.Add(new TextBlock { Text = "시작번호", Foreground = Brushes.White, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0,0,5,0) });
-            _startNumberInput = new TextBox { Text = "1", Width = 82, Padding = new Thickness(4), VerticalContentAlignment = VerticalAlignment.Center, ToolTip = "1~2147483647 입력 후 적용 또는 Enter" };
+            _startNumberInput = new TextBox { Text = "1", Width = 82, Padding = new Thickness(4), VerticalContentAlignment = VerticalAlignment.Center,
+                Background = new SolidColorBrush(Color.FromRgb(60, 64, 67)), Foreground = Foreground,
+                BorderBrush = new SolidColorBrush(Color.FromRgb(95, 99, 104)), ToolTip = "1~2147483647 입력 후 적용 또는 Enter" };
             _startNumberInput.KeyDown += (s, e) => { if (e.Key == Key.Enter) { ApplyStartNumber(); e.Handled = true; } };
             numberControls.Children.Add(_startNumberInput);
             AddButton(numberControls, "번호 적용", ApplyStartNumber);
@@ -126,7 +128,8 @@ namespace Panseo.Views
         private void AddTool(Panel panel, string label, DrawingTool tool)
         {
             var button = new RadioButton { Content = label, GroupName = "CaptureTools", Margin = new Thickness(4),
-                Foreground = Brushes.White, Padding = new Thickness(4), IsChecked = tool == _tool };
+                Padding = new Thickness(8, 5, 8, 5), IsChecked = tool == _tool,
+                Style = CreateMaterialStyle(typeof(RadioButton)) };
             button.Click += (s, e) => SelectTool(tool);
             _tools.Add(tool, button);
             panel.Children.Add(button);
@@ -134,9 +137,45 @@ namespace Panseo.Views
 
         private static void AddButton(Panel panel, string label, Action action)
         {
-            var button = new Button { Content = label, Padding = new Thickness(8, 5, 8, 5), Margin = new Thickness(3) };
+            var button = new Button { Content = label, Padding = new Thickness(8, 5, 8, 5), Margin = new Thickness(3),
+                Style = CreateMaterialStyle(typeof(Button)) };
             button.Click += (s, e) => action();
             panel.Children.Add(button);
+        }
+
+        private static Style CreateMaterialStyle(Type controlType)
+        {
+            var style = new Style(controlType);
+            style.Setters.Add(new Setter(Control.BackgroundProperty, new SolidColorBrush(Color.FromRgb(60, 64, 67))));
+            style.Setters.Add(new Setter(Control.ForegroundProperty, new SolidColorBrush(Color.FromRgb(241, 243, 244))));
+            style.Setters.Add(new Setter(Control.BorderBrushProperty, new SolidColorBrush(Color.FromRgb(95, 99, 104))));
+            style.Setters.Add(new Setter(Control.BorderThicknessProperty, new Thickness(1)));
+            style.Setters.Add(new Setter(Control.FontFamilyProperty, new FontFamily("Malgun Gothic, Segoe UI")));
+            style.Setters.Add(new Setter(Control.FontSizeProperty, 11.0));
+            style.Setters.Add(new Setter(FrameworkElement.MinHeightProperty, 32.0));
+            style.Setters.Add(new Setter(FrameworkElement.CursorProperty, Cursors.Hand));
+            var border = new FrameworkElementFactory(typeof(Border));
+            border.Name = "surface";
+            border.SetValue(Border.CornerRadiusProperty, new CornerRadius(12));
+            border.SetValue(Border.BackgroundProperty, new TemplateBindingExtension(Control.BackgroundProperty));
+            border.SetValue(Border.BorderBrushProperty, new TemplateBindingExtension(Control.BorderBrushProperty));
+            border.SetValue(Border.BorderThicknessProperty, new TemplateBindingExtension(Control.BorderThicknessProperty));
+            var content = new FrameworkElementFactory(typeof(ContentPresenter));
+            content.SetValue(FrameworkElement.HorizontalAlignmentProperty, HorizontalAlignment.Center);
+            content.SetValue(FrameworkElement.VerticalAlignmentProperty, VerticalAlignment.Center);
+            content.SetValue(FrameworkElement.MarginProperty, new TemplateBindingExtension(Control.PaddingProperty));
+            border.AppendChild(content);
+            var template = new ControlTemplate(controlType) { VisualTree = border };
+            var hover = new Trigger { Property = UIElement.IsMouseOverProperty, Value = true };
+            hover.Setters.Add(new Setter(Border.BackgroundProperty, new SolidColorBrush(Color.FromRgb(74, 78, 82)), "surface"));
+            hover.Setters.Add(new Setter(Border.BorderBrushProperty, new SolidColorBrush(Color.FromRgb(138, 180, 248)), "surface"));
+            template.Triggers.Add(hover);
+            var active = new Trigger { Property = controlType == typeof(Button) ? ButtonBase.IsPressedProperty : ToggleButton.IsCheckedProperty, Value = true };
+            active.Setters.Add(new Setter(Border.BackgroundProperty, new SolidColorBrush(Color.FromRgb(138, 180, 248)), "surface"));
+            active.Setters.Add(new Setter(Control.ForegroundProperty, new SolidColorBrush(Color.FromRgb(32, 33, 36))));
+            template.Triggers.Add(active);
+            style.Setters.Add(new Setter(Control.TemplateProperty, template));
+            return style;
         }
 
         public void SelectTool(DrawingTool tool)
@@ -359,6 +398,8 @@ namespace Panseo.Views
             if (Keyboard.FocusedElement is TextBox) return;
             if (Keyboard.Modifiers == ModifierKeys.None && e.Key == Key.F1) { SaveCapture(); e.Handled = true; return; }
             if (Keyboard.Modifiers == ModifierKeys.None && e.Key == Key.F3) { PinCapture(); e.Handled = true; return; }
+            if (Keyboard.Modifiers == (ModifierKeys.Control | ModifierKeys.Shift) && e.Key == Key.D1)
+            { AppSettings.Instance.DrawingColor = Colors.Red; e.Handled = true; return; }
             if (Keyboard.Modifiers != ModifierKeys.Control) return;
             switch (e.Key)
             {
@@ -375,7 +416,6 @@ namespace Panseo.Views
                 case Key.T: SelectTool(DrawingTool.Text); break;
                 case Key.N: SelectTool(DrawingTool.Number); break;
                 case Key.Delete: ClearAll(); break;
-                case Key.D1: AppSettings.Instance.DrawingColor = Colors.Red; break;
                 case Key.D2: AppSettings.Instance.DrawingColor = Colors.Yellow; break;
                 case Key.D3: AppSettings.Instance.DrawingColor = Colors.LimeGreen; break;
                 case Key.D4: AppSettings.Instance.DrawingColor = Colors.DeepSkyBlue; break;

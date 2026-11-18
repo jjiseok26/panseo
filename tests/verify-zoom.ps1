@@ -51,7 +51,7 @@ $manual = [Panseo.Views.ManualWindow]::new()
 if (-not $manual.Content.Children[0].Text.Contains('jiseok')) { throw 'Manual copyright missing' }
 $document = $manual.Content.Children[1].Document
 $text = [Windows.Documents.TextRange]::new($document.ContentStart,$document.ContentEnd).Text
-if ($text.Length -lt 1000 -or -not $text.Contains('Ctrl+Q') -or -not $text.Contains('F1') -or -not $text.Contains('F3')) { throw 'Offline manual is incomplete' }
+if ($text.Length -lt 1000 -or -not $text.Contains('Ctrl+1') -or -not $text.Contains('F1') -or -not $text.Contains('F3')) { throw 'Offline manual is incomplete' }
 $icon = $assembly.GetType('Panseo.Helpers.AppIcon').GetMethod('Load').Invoke($null,@())
 try {
     if ($icon.Width -ne 32 -or $icon.Height -ne 32) { throw 'Embedded tray icon invalid' }

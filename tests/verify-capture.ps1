@@ -70,6 +70,20 @@ if ($confirm.Margin.Left -le $selection.Right -or $confirm.Margin.Top -ne $selec
 [Panseo.Models.AppSettings]::Instance.DrawingColor = [Windows.Media.Colors]::Red
 [Panseo.Models.AppSettings]::Instance.StrokeThickness = 4
 $editor = [Panseo.Views.CaptureEditorWindow]::new($image)
+$toolPanel = $editor.Content.Children[0]
+$toolButton = @($toolPanel.Children | Where-Object { $_ -is [Windows.Controls.RadioButton] })[0]
+$actionButton = @($toolPanel.Children | Where-Object { $_ -is [Windows.Controls.Button] })[0]
+foreach ($control in @($toolButton,$actionButton)) {
+    if (-not $control.Style -or -not @($control.Style.Setters | Where-Object { $_.Property -eq [Windows.Controls.Control]::TemplateProperty }).Count) { throw 'Capture editor Material button style missing' }
+}
+$editor.Content.Measure([Windows.Size]::new(900,500))
+$editor.Content.Arrange([Windows.Rect]::new(0,0,900,500))
+$preview = [Windows.Media.Imaging.RenderTargetBitmap]::new(900,500,96,96,[Windows.Media.PixelFormats]::Pbgra32)
+$preview.Render($editor.Content)
+$encoder = [Windows.Media.Imaging.PngBitmapEncoder]::new()
+$encoder.Frames.Add([Windows.Media.Imaging.BitmapFrame]::Create($preview))
+$previewFile = [IO.File]::Create((Join-Path $PSScriptRoot 'editor-preview.png'))
+try { $encoder.Save($previewFile) } finally { $previewFile.Dispose() }
 $canvas = $editor.GetType().GetField('_canvas', $flags).GetValue($editor)
 $shapeMethod = $editor.GetType().GetMethod('CreateShape', $flags)
 foreach ($tool in 'Pen','Rectangle','Ellipse','Arrow') {
