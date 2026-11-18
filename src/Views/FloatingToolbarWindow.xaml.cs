@@ -42,6 +42,9 @@ namespace Panseo.Views
         private IntPtr _keyboardHookId = IntPtr.Zero;
         private bool _captureHotkeyRegistered;
         private bool _pinHotkeyRegistered;
+        private bool _zoomHotkeyRegistered;
+        private bool _zoomNumpadHotkeyRegistered;
+        private bool _zoomShortcutDown;
 
         private const int HOTKEY_ID_F1 = 9000;
         private const int HOTKEY_ID_F2 = 9001;
@@ -51,6 +54,7 @@ namespace Panseo.Views
         private const int HOTKEY_ID_PIN = 9010;
         private const int HOTKEY_ID_MOUSE = 9011;
         private const int HOTKEY_ID_ZOOM = 9012;
+        private const int HOTKEY_ID_ZOOM_NUMPAD = 9013;
         private const int HOTKEY_ID_POINTER_FIRST = 9004;
         private static readonly PointerShape[] PointerShortcutShapes =
         {
@@ -106,7 +110,8 @@ namespace Panseo.Views
                 _captureHotkeyRegistered = Win32.RegisterHotKey(helper.Handle, HOTKEY_ID_CAPTURE, 0x4000, VK_F1);
                 _pinHotkeyRegistered = Win32.RegisterHotKey(helper.Handle, HOTKEY_ID_PIN, 0x4000, VK_F3);
                 Win32.RegisterHotKey(helper.Handle, HOTKEY_ID_MOUSE, MOD_CONTROL, 0x4D);
-                Win32.RegisterHotKey(helper.Handle, HOTKEY_ID_ZOOM, MOD_CONTROL | 0x4000, 0x31);
+                _zoomHotkeyRegistered = Win32.RegisterHotKey(helper.Handle, HOTKEY_ID_ZOOM, MOD_CONTROL | 0x4000, 0x31);
+                _zoomNumpadHotkeyRegistered = Win32.RegisterHotKey(helper.Handle, HOTKEY_ID_ZOOM_NUMPAD, MOD_CONTROL | 0x4000, 0x61);
                 for (int i = 0; i < PointerShortcutShapes.Length; i++)
                 {
                     Win32.RegisterHotKey(helper.Handle, HOTKEY_ID_POINTER_FIRST + i, MOD_CONTROL, (uint)(0x74 + i)); // Ctrl+F5 ~ F9
@@ -145,7 +150,8 @@ namespace Panseo.Views
                 if (_captureHotkeyRegistered) Win32.UnregisterHotKey(helper.Handle, HOTKEY_ID_CAPTURE);
                 if (_pinHotkeyRegistered) Win32.UnregisterHotKey(helper.Handle, HOTKEY_ID_PIN);
                 Win32.UnregisterHotKey(helper.Handle, HOTKEY_ID_MOUSE);
-                Win32.UnregisterHotKey(helper.Handle, HOTKEY_ID_ZOOM);
+                if (_zoomHotkeyRegistered) Win32.UnregisterHotKey(helper.Handle, HOTKEY_ID_ZOOM);
+                if (_zoomNumpadHotkeyRegistered) Win32.UnregisterHotKey(helper.Handle, HOTKEY_ID_ZOOM_NUMPAD);
                 for (int i = 0; i < PointerShortcutShapes.Length; i++)
                 {
                     Win32.UnregisterHotKey(helper.Handle, HOTKEY_ID_POINTER_FIRST + i);
@@ -172,7 +178,7 @@ namespace Panseo.Views
             {
                 if (_isCapturing) { handled = true; return IntPtr.Zero; }
                 int id = wParam.ToInt32();
-                if (id == HOTKEY_ID_ZOOM) { ToggleScreenZoom(); handled = true; return IntPtr.Zero; }
+                if (id == HOTKEY_ID_ZOOM || id == HOTKEY_ID_ZOOM_NUMPAD) { ToggleScreenZoom(); handled = true; return IntPtr.Zero; }
                 if (id == HOTKEY_ID_CAPTURE || id == HOTKEY_ID_PIN)
                 {
                     var editor = _zoomWindow != null ? (CaptureEditorWindow)_zoomWindow : GetActiveCaptureEditor();
@@ -230,6 +236,26 @@ namespace Panseo.Views
 
         private IntPtr KeyboardHookCallback(int nCode, IntPtr wParam, IntPtr lParam)
         {
+            if (nCode >= 0 && (!_zoomHotkeyRegistered || !_zoomNumpadHotkeyRegistered))
+            {
+                int message = wParam.ToInt32();
+                var key = (Win32.KBDLLHOOKSTRUCT)Marshal.PtrToStructure(lParam, typeof(Win32.KBDLLHOOKSTRUCT));
+                bool missingRegistration = key.vkCode == 0x31 ? !_zoomHotkeyRegistered :
+                    key.vkCode == 0x61 && !_zoomNumpadHotkeyRegistered;
+                if ((message == Win32.WM_KEYUP || message == Win32.WM_SYSKEYUP) &&
+                    (key.vkCode == 0x31 || key.vkCode == 0x61))
+                    _zoomShortcutDown = false;
+                if (missingRegistration && IsZoomKeyCombination(message, key.vkCode,
+                    (Win32.GetAsyncKeyState(0x11) & 0x8000) != 0,
+                    (Win32.GetAsyncKeyState(0x10) & 0x8000) != 0,
+                    (Win32.GetAsyncKeyState(0x12) & 0x8000) != 0))
+                {
+                    if (!_zoomShortcutDown && !_isCapturing)
+                        Dispatcher.BeginInvoke((Action)(() => ToggleScreenZoom()));
+                    _zoomShortcutDown = true;
+                    return new IntPtr(1);
+                }
+            }
             // 캡처 창의 입력은 해당 창이 처리하여 바탕화면 판서와 충돌하지 않게 한다.
             if ((IsActive && Keyboard.FocusedElement is TextBox) || _isCapturing || _zoomWindow != null || App.IsUpdateGuideActive || (_manualWindow != null && _manualWindow.IsActive) || GetActiveCaptureEditor() != null)
                 return Win32.CallNextHookEx(_keyboardHookId, nCode, wParam, lParam);
@@ -263,6 +289,12 @@ namespace Panseo.Views
                 }
             }
             return Win32.CallNextHookEx(_keyboardHookId, nCode, wParam, lParam);
+        }
+
+        internal static bool IsZoomKeyCombination(int message, uint key, bool control, bool shift, bool alt)
+        {
+            return (message == Win32.WM_KEYDOWN || message == Win32.WM_SYSKEYDOWN) &&
+                (key == 0x31 || key == 0x61) && control && !shift && !alt;
         }
 
         private bool HandleDrawingShortcut(int vk)

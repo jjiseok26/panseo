@@ -26,6 +26,12 @@ if ($clear.Parent -ne $zoom.Parent -or $pin.Parent -ne $save.Parent -or $clear.P
 if ($save.Content.Inlines.LastInline.Text -ne 'F1' -or $pin.Content.Inlines.LastInline.Text -ne 'F3') { throw 'Capture shortcut labels are stale' }
 $shortcutSource = Get-Content (Join-Path $root 'src\Views\FloatingToolbarWindow.xaml.cs') -Raw
 if ($shortcutSource -notmatch 'HOTKEY_ID_CAPTURE, 0x4000, VK_F1' -or $shortcutSource -notmatch 'HOTKEY_ID_PIN, 0x4000, VK_F3') { throw 'F1/F3 global hotkeys missing' }
+if ($shortcutSource -notmatch '_zoomHotkeyRegistered = Win32.RegisterHotKey' -or $shortcutSource -notmatch '_zoomNumpadHotkeyRegistered = Win32.RegisterHotKey' -or $shortcutSource -notmatch 'if \(nCode >= 0 && \(!_zoomHotkeyRegistered \|\| !_zoomNumpadHotkeyRegistered\)\)') { throw 'Zoom hotkey fallback missing' }
+$zoomKeys = $window.GetType().GetMethod('IsZoomKeyCombination',[Reflection.BindingFlags]'Static,NonPublic')
+foreach ($key in 0x31,0x61) {
+    if (-not $zoomKeys.Invoke($null,@([int]0x100,[uint32]$key,$true,$false,$false))) { throw "Ctrl+1 key rejected: $key" }
+    if ($zoomKeys.Invoke($null,@([int]0x100,[uint32]$key,$true,$true,$false))) { throw 'Ctrl+Shift+1 conflicts with zoom' }
+}
 if ($null -eq $window.FindName('MenuHeader').Background) { throw 'Header empty space is not draggable' }
 $previousBottom = 0
 foreach ($name in 'RbPointerCircle', 'RbToolMouse', 'ChkBlackboard') {
