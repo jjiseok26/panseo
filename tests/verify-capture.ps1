@@ -1,5 +1,5 @@
 ﻿$ErrorActionPreference = 'Stop'
-Add-Type -AssemblyName PresentationFramework, PresentationCore, WindowsBase, System.Drawing
+Add-Type -AssemblyName PresentationFramework, PresentationCore, WindowsBase, System.Drawing, System.Windows.Forms
 $root = Split-Path $PSScriptRoot -Parent
 $assembly = [Reflection.Assembly]::LoadFrom((Join-Path $root 'bin\Release\Panseo.exe'))
 $flags = [Reflection.BindingFlags]'Instance,NonPublic'
@@ -12,11 +12,19 @@ if ($cropped.PixelWidth -ne 160 -or $cropped.PixelHeight -ne 80) { throw 'Region
 $clamped = $crop.Invoke($null, @($image, [Windows.Rect]::new(-10,-10,200,200), [Windows.Size]::new(160,100)))
 if ($clamped.PixelWidth -ne 320 -or $clamped.PixelHeight -ne 200) { throw 'Region clamping failed' }
 $selector = [Panseo.Views.RegionCaptureWindow]::new($image,[Drawing.Rectangle]::new(0,0,320,200))
+$map = $selector.GetType().GetMethod('MapToViewport',[Reflection.BindingFlags]'Static,NonPublic')
+$mapped = $map.Invoke($null,@([Drawing.Rectangle]::new(1920,100,500,400),[Drawing.Rectangle]::new(0,0,4992,1728),[Windows.Size]::new(2496,864)))
+if ($mapped.Left -ne 960 -or $mapped.Top -ne 50 -or $mapped.Width -ne 250 -or $mapped.Height -ne 200) { throw 'Automatic region mapping across monitors failed' }
 $surface = $selector.GetType().GetField('_surface',$flags).GetValue($selector)
 $surface.Measure([Windows.Size]::new(320,200))
 $surface.Arrange([Windows.Rect]::new(0,0,320,200))
 $updateSelection = $selector.GetType().GetMethod('UpdateSelection',$flags)
 $drag = $selector.GetType().GetMethod('UpdateDrag',$flags)
+$selector.GetType().GetField('_automaticSelection',$flags).SetValue($selector,$true)
+[void]$updateSelection.Invoke($selector,@([Windows.Rect]::new(20,20,200,120)))
+[void]$selector.GetType().GetMethod('BeginSelectionAt',$flags).Invoke($selector,@([Windows.Point]::new(100,70)))
+$selection = $selector.GetType().GetField('_selection',$flags).GetValue($selector)
+if ($selection.Width -gt 1 -or $selection.Height -gt 1 -or $selector.GetType().GetField('_automaticSelection',$flags).GetValue($selector)) { throw 'Dragging inside automatic region did not start a new selection' }
 $initial = [Windows.Rect]::new(30,40,100,60)
 [void]$updateSelection.Invoke($selector,@($initial))
 $selector.GetType().GetField('_dragOriginal',$flags).SetValue($selector,$initial)
@@ -47,6 +55,14 @@ $selector.GetType().GetField('_start',$flags).SetValue($selector,[Windows.Point]
 [void]$drag.Invoke($selector,@([Windows.Point]::new(80,90)))
 $selection = $selector.GetType().GetField('_selection',$flags).GetValue($selector)
 if ($selection.Left -ne 10 -or $selection.Top -ne 10 -or $selection.Width -ne 70 -or $selection.Height -ne 80) { throw 'Selecting a new region failed' }
+$instruction = $selector.GetType().GetField('_instruction',$flags).GetValue($selector)
+$monitor = [Windows.Forms.Screen]::PrimaryScreen.Bounds
+$selector.GetType().GetMethod('PositionInstruction',$flags).Invoke($selector,@($monitor,[Drawing.Point]::new($monitor.Left+30,$monitor.Top+30)))
+if ($instruction.Margin.Left -lt 0 -or $instruction.Margin.Left + $instruction.Width -gt $surface.ActualWidth) { throw 'Instruction extends beyond selected monitor' }
+$detector = $assembly.GetType('Panseo.Helpers.CaptureTargetDetector').GetMethod('Detect',[Reflection.BindingFlags]'Static,NonPublic')
+$cursor = [Windows.Forms.Cursor]::Position
+$target = $detector.Invoke($null,@($cursor,[Windows.Forms.SystemInformation]::VirtualScreen))
+if (-not $target.Contains($cursor) -or $target.Width -lt 24 -or $target.Height -lt 24) { throw 'Automatic target detection failed' }
 $handles = $selector.GetType().GetField('_handles',$flags).GetValue($selector)
 if ($handles.Count -ne 8 -or @($handles | Where-Object { $_.Visibility -ne [Windows.Visibility]::Visible }).Count -ne 0) { throw 'Selection resize handles are hidden' }
 $confirm = $selector.GetType().GetField('_confirm',$flags).GetValue($selector)

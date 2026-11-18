@@ -23,8 +23,9 @@ $save = $window.FindName('BtnSaveScreenshot')
 if ($clear.Parent -ne $zoom.Parent -or $pin.Parent -ne $save.Parent -or $clear.Parent -ne $pin.Parent -or
     $clear.TransformToAncestor($card).Transform([Windows.Point]::new(0,0)).X -ge $zoom.TransformToAncestor($card).Transform([Windows.Point]::new(0,0)).X -or
     $pin.TransformToAncestor($card).Transform([Windows.Point]::new(0,0)).X -ge $save.TransformToAncestor($card).Transform([Windows.Point]::new(0,0)).X) { throw 'Capture/zoom button order failed' }
-if ($save.Content.Inlines.LastInline.Text -ne 'Ctrl+F12') { throw 'Capture shortcut label is stale' }
-if ((Get-Content (Join-Path $root 'src\Views\FloatingToolbarWindow.xaml.cs') -Raw) -notmatch 'HOTKEY_ID_CAPTURE, MOD_CONTROL \| 0x4000, 0x7B') { throw 'Ctrl+F12 global hotkey missing' }
+if ($save.Content.Inlines.LastInline.Text -ne 'F1' -or $pin.Content.Inlines.LastInline.Text -ne 'F3') { throw 'Capture shortcut labels are stale' }
+$shortcutSource = Get-Content (Join-Path $root 'src\Views\FloatingToolbarWindow.xaml.cs') -Raw
+if ($shortcutSource -notmatch 'HOTKEY_ID_CAPTURE, 0x4000, VK_F1' -or $shortcutSource -notmatch 'HOTKEY_ID_PIN, 0x4000, VK_F3') { throw 'F1/F3 global hotkeys missing' }
 if ($null -eq $window.FindName('MenuHeader').Background) { throw 'Header empty space is not draggable' }
 $previousBottom = 0
 foreach ($name in 'RbPointerCircle', 'RbToolMouse', 'ChkBlackboard') {

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -79,8 +80,8 @@ namespace Panseo.Views
             tools.Children.Add(numberControls);
             AddButton(tools, "되돌리기 Ctrl+Z", Undo);
             AddButton(tools, "다시 실행 Ctrl+Y", Redo);
-            AddButton(tools, "저장 Ctrl+F12", SaveCapture);
-            AddButton(tools, "화면 고정 Ctrl+F11", PinCapture);
+            AddButton(tools, "저장 F1", SaveCapture);
+            AddButton(tools, "화면 고정 F3", PinCapture);
             AddButton(tools, "전체 지우기", ClearAll);
             if (screenZoom)
             {
@@ -355,7 +356,10 @@ namespace Panseo.Views
 
         private void EditorKeyDown(object sender, KeyEventArgs e)
         {
-            if (Keyboard.Modifiers != ModifierKeys.Control || Keyboard.FocusedElement is TextBox) return;
+            if (Keyboard.FocusedElement is TextBox) return;
+            if (Keyboard.Modifiers == ModifierKeys.None && e.Key == Key.F1) { SaveCapture(); e.Handled = true; return; }
+            if (Keyboard.Modifiers == ModifierKeys.None && e.Key == Key.F3) { PinCapture(); e.Handled = true; return; }
+            if (Keyboard.Modifiers != ModifierKeys.Control) return;
             switch (e.Key)
             {
                 case Key.Z: Undo(); break;
@@ -370,8 +374,6 @@ namespace Panseo.Views
                 case Key.A: SelectTool(DrawingTool.Arrow); break;
                 case Key.T: SelectTool(DrawingTool.Text); break;
                 case Key.N: SelectTool(DrawingTool.Number); break;
-                case Key.F12: SaveCapture(); break;
-                case Key.F11: PinCapture(); break;
                 case Key.Delete: ClearAll(); break;
                 case Key.D1: AppSettings.Instance.DrawingColor = Colors.Red; break;
                 case Key.D2: AppSettings.Instance.DrawingColor = Colors.Yellow; break;
@@ -499,11 +501,7 @@ namespace Panseo.Views
             var save = new MenuItem { Header = "저장하기" };
             save.Click += (s, e) => CaptureFiles.Save(this, _image);
             var copy = new MenuItem { Header = "복사하기" };
-            copy.Click += (s, e) =>
-            {
-                try { Clipboard.SetImage(_image); }
-                catch (Exception ex) { MessageBox.Show(this, "이미지를 복사할 수 없습니다: " + ex.Message, "Panseo", MessageBoxButton.OK, MessageBoxImage.Error); }
-            };
+            copy.Click += (s, e) => CopyImage();
             var close = new MenuItem { Header = "닫기" };
             close.Click += (s, e) => Close();
             menu.Items.Add(save);
@@ -512,7 +510,22 @@ namespace Panseo.Views
             border.ContextMenu = menu;
             border.MouseLeftButtonDown += (s, e) => { if (!grip.IsMouseOver) Win32.TryDragMove(this); };
             Content = border;
+            Loaded += (s, e) => CopyImage();
             KeyDown += (s, e) => { if (e.Key == Key.D0 || e.Key == Key.NumPad0) view.Reset(); };
+        }
+
+        private void CopyImage()
+        {
+            for (int attempt = 0; attempt < 3; attempt++)
+            {
+                try { Clipboard.SetImage(_image); Clipboard.Flush(); return; }
+                catch (System.Runtime.InteropServices.ExternalException ex)
+                {
+                    if (attempt == 2) MessageBox.Show(this, "이미지를 복사할 수 없습니다: " + ex.Message,
+                        "Panseo", MessageBoxButton.OK, MessageBoxImage.Error);
+                    else Thread.Sleep(50);
+                }
+            }
         }
     }
 }

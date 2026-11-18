@@ -18,6 +18,7 @@ namespace Panseo.Views
         private readonly Rectangle _outline;
         private readonly Rectangle[] _handles = new Rectangle[8];
         private readonly Button _confirm;
+        private readonly TextBlock _instruction;
         private Point _start;
         private Rect _selection;
         private Rect _dragOriginal;
@@ -25,9 +26,15 @@ namespace Panseo.Views
         private int _edgeY;
         private bool _moving;
         private bool _selecting;
+        private bool _automaticSelection;
+        private bool _initialSelectionApplied;
         public BitmapSource Selection { get; private set; }
 
         public RegionCaptureWindow(BitmapSource snapshot, System.Drawing.Rectangle bounds)
+            : this(snapshot, bounds, System.Drawing.Rectangle.Empty, System.Windows.Forms.Cursor.Position) { }
+
+        public RegionCaptureWindow(BitmapSource snapshot, System.Drawing.Rectangle bounds,
+            System.Drawing.Rectangle suggested, System.Drawing.Point cursor)
         {
             Title = "Panseo 영역 선택";
             WindowStyle = WindowStyle.None;
@@ -50,14 +57,15 @@ namespace Panseo.Views
                 overlay.Children.Add(_handles[i]);
             }
             _surface.Children.Add(overlay);
-            _surface.Children.Add(new TextBlock
+            _instruction = new TextBlock
             {
-                Text = "영역을 드래그한 뒤 가장자리·모서리로 크기를 조정하세요 · Enter: 확정 · Esc / 우클릭: 취소",
+                Text = "자동 선택된 영역을 확정하거나 드래그로 다시 선택하세요 · Enter: 확정 · Esc: 취소",
                 Foreground = Brushes.White, Background = new SolidColorBrush(Color.FromArgb(220, 24, 24, 38)),
                 Padding = new Thickness(16, 10, 16, 10), FontSize = 16,
-                HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Top,
-                Margin = new Thickness(12), IsHitTestVisible = false
-            });
+                TextWrapping = TextWrapping.Wrap, HorizontalAlignment = HorizontalAlignment.Left,
+                VerticalAlignment = VerticalAlignment.Top, IsHitTestVisible = false
+            };
+            _surface.Children.Add(_instruction);
             _confirm = new Button { Content = "캡처 확정 (Enter)", Width = 160, Height = 40,
                 IsEnabled = false, Visibility = Visibility.Collapsed,
                 HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Top, Cursor = Cursors.Hand };
@@ -66,24 +74,26 @@ namespace Panseo.Views
             Content = _surface;
             Loaded += (s, e) => Win32.SetWindowPos(new WindowInteropHelper(this).Handle,
                 Win32.HWND_TOPMOST, bounds.X, bounds.Y, bounds.Width, bounds.Height, Win32.SWP_SHOWWINDOW);
-            _surface.SizeChanged += (s, e) => UpdateSelection(new Rect());
+            _surface.SizeChanged += (s, e) =>
+            {
+                UpdateSelection(_selection);
+                PositionInstruction(bounds, cursor);
+            };
+            ContentRendered += (s, e) =>
+            {
+                if (_initialSelectionApplied) return;
+                _initialSelectionApplied = true;
+                var region = System.Drawing.Rectangle.Intersect(bounds, suggested);
+                if (region.Width < 24 || region.Height < 24) return;
+                _automaticSelection = true;
+                UpdateSelection(MapToViewport(region, bounds, _surface.RenderSize));
+            };
             _surface.MouseLeftButtonDown += (s, e) =>
             {
                 if (_confirm.IsMouseOver) return;
-                _start = e.GetPosition(_surface);
-                _dragOriginal = _selection;
-                _edgeX = _edgeY = 0;
-                _moving = false;
-                if (_selection.Width >= 3 && _selection.Height >= 3 &&
-                    new Rect(_selection.Left - 8, _selection.Top - 8, _selection.Width + 16, _selection.Height + 16).Contains(_start))
-                {
-                    _edgeX = Math.Abs(_start.X - _selection.Left) <= 8 ? -1 : Math.Abs(_start.X - _selection.Right) <= 8 ? 1 : 0;
-                    _edgeY = Math.Abs(_start.Y - _selection.Top) <= 8 ? -1 : Math.Abs(_start.Y - _selection.Bottom) <= 8 ? 1 : 0;
-                    _moving = _edgeX == 0 && _edgeY == 0 && _selection.Contains(_start);
-                }
+                BeginSelectionAt(e.GetPosition(_surface));
                 _selecting = true;
                 _surface.CaptureMouse();
-                if (!_moving && _edgeX == 0 && _edgeY == 0) UpdateSelection(new Rect(_start, _start));
             };
             _surface.MouseMove += (s, e) =>
             {
@@ -105,6 +115,43 @@ namespace Panseo.Views
                 if (e.Key == Key.Escape) Close();
                 else if (e.Key == Key.Enter) { Confirm(snapshot); e.Handled = true; }
             };
+        }
+
+        internal static Rect MapToViewport(System.Drawing.Rectangle selection, System.Drawing.Rectangle desktop, Size viewport)
+        {
+            var region = System.Drawing.Rectangle.Intersect(desktop, selection);
+            if (region.IsEmpty || desktop.Width <= 0 || desktop.Height <= 0) return Rect.Empty;
+            return new Rect((region.Left - desktop.Left) * viewport.Width / desktop.Width,
+                (region.Top - desktop.Top) * viewport.Height / desktop.Height,
+                region.Width * viewport.Width / desktop.Width, region.Height * viewport.Height / desktop.Height);
+        }
+
+        private void BeginSelectionAt(Point point)
+        {
+            _start = point;
+            _dragOriginal = _selection;
+            _edgeX = _edgeY = 0;
+            _moving = false;
+            if (_selection.Width >= 3 && _selection.Height >= 3 &&
+                new Rect(_selection.Left - 8, _selection.Top - 8, _selection.Width + 16, _selection.Height + 16).Contains(_start))
+            {
+                _edgeX = Math.Abs(_start.X - _selection.Left) <= 8 ? -1 : Math.Abs(_start.X - _selection.Right) <= 8 ? 1 : 0;
+                _edgeY = Math.Abs(_start.Y - _selection.Top) <= 8 ? -1 : Math.Abs(_start.Y - _selection.Bottom) <= 8 ? 1 : 0;
+                _moving = _edgeX == 0 && _edgeY == 0 && _selection.Contains(_start);
+            }
+            if (_automaticSelection && _edgeX == 0 && _edgeY == 0) _moving = false;
+            _automaticSelection = false;
+            if (!_moving && _edgeX == 0 && _edgeY == 0) UpdateSelection(new Rect(_start, _start));
+        }
+
+        private void PositionInstruction(System.Drawing.Rectangle bounds, System.Drawing.Point cursor)
+        {
+            var monitor = System.Windows.Forms.Screen.FromPoint(cursor).Bounds;
+            double scale = _surface.ActualWidth / bounds.Width;
+            double monitorLeft = (monitor.Left - bounds.Left) * scale;
+            double monitorWidth = monitor.Width * scale;
+            _instruction.Width = Math.Max(120, Math.Min(720, monitorWidth - 24));
+            _instruction.Margin = new Thickness(monitorLeft + (monitorWidth - _instruction.Width) / 2, 12, 0, 0);
         }
 
         private void Confirm(BitmapSource snapshot)

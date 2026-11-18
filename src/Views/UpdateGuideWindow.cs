@@ -81,7 +81,7 @@ namespace Panseo.Views
             Label(pin, 35, 48, "휠 ↕", 16);
             Label(pin, 112, 50, "Ctrl + 드래그", 12);
             cards.Children.Add(Card("고정 캡처도 확대/축소", pin,
-                "Ctrl+F11로 영역을 고정합니다. 오른쪽 아래 조절점으로 창 크기를 바꾸고, 이미지 위에서 휠로 확대합니다. 우클릭하면 저장하기·복사하기·닫기가 나옵니다."));
+                "F3으로 영역을 고정하면 이미지가 자동 복사됩니다. 오른쪽 아래 조절점으로 창 크기를 바꾸고, 이미지 위에서 휠로 확대합니다. 우클릭하면 저장하기·복사하기·닫기가 나옵니다."));
             var menu = Picture();
             Box(menu, 6, 30, 74, 36, "SHA-256", Brushes.LightSteelBlue);
             Label(menu, 88, 37, "→", 20);

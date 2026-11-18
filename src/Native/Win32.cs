@@ -54,6 +54,32 @@ namespace Panseo.Native
         }
 
         [StructLayout(LayoutKind.Sequential)]
+        public struct RECT
+        {
+            public int Left, Top, Right, Bottom;
+        }
+
+        [DllImport("user32.dll")]
+        public static extern IntPtr WindowFromPoint(POINT point);
+
+        [DllImport("user32.dll")]
+        public static extern IntPtr GetAncestor(IntPtr hWnd, uint flags);
+
+        [DllImport("user32.dll")]
+        public static extern IntPtr GetWindow(IntPtr hWnd, uint command);
+
+        [DllImport("user32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static extern bool IsWindowVisible(IntPtr hWnd);
+
+        [DllImport("user32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static extern bool GetWindowRect(IntPtr hWnd, out RECT rect);
+
+        [DllImport("user32.dll")]
+        public static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint processId);
+
+        [StructLayout(LayoutKind.Sequential)]
         public struct MSLLHOOKSTRUCT
         {
             public POINT pt;

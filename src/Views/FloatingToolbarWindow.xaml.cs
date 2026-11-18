@@ -41,6 +41,7 @@ namespace Panseo.Views
         private Win32.LowLevelMouseProc _keyboardProc;
         private IntPtr _keyboardHookId = IntPtr.Zero;
         private bool _captureHotkeyRegistered;
+        private bool _pinHotkeyRegistered;
 
         private const int HOTKEY_ID_F1 = 9000;
         private const int HOTKEY_ID_F2 = 9001;
@@ -88,7 +89,7 @@ namespace Panseo.Views
 
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
-            // 전역 단축키 등록 (Ctrl+F1 ~ Ctrl+F9, Ctrl+F11/F12, Ctrl+M, Ctrl+Q)
+            // 전역 단축키 등록 (F1 캡처 저장, F3 캡처 고정, Ctrl 조합 도구)
             try
             {
                 var helper = new WindowInteropHelper(this);
@@ -102,8 +103,8 @@ namespace Panseo.Views
                 Win32.RegisterHotKey(helper.Handle, HOTKEY_ID_F2, MOD_CONTROL, VK_F2);
                 Win32.RegisterHotKey(helper.Handle, HOTKEY_ID_F3, MOD_CONTROL, VK_F3);
                 Win32.RegisterHotKey(helper.Handle, HOTKEY_ID_F4, MOD_CONTROL, VK_F4);
-                _captureHotkeyRegistered = Win32.RegisterHotKey(helper.Handle, HOTKEY_ID_CAPTURE, MOD_CONTROL | 0x4000, 0x7B);
-                Win32.RegisterHotKey(helper.Handle, HOTKEY_ID_PIN, MOD_CONTROL | 0x4000, 0x7A);
+                _captureHotkeyRegistered = Win32.RegisterHotKey(helper.Handle, HOTKEY_ID_CAPTURE, 0x4000, VK_F1);
+                _pinHotkeyRegistered = Win32.RegisterHotKey(helper.Handle, HOTKEY_ID_PIN, 0x4000, VK_F3);
                 Win32.RegisterHotKey(helper.Handle, HOTKEY_ID_MOUSE, MOD_CONTROL, 0x4D);
                 Win32.RegisterHotKey(helper.Handle, HOTKEY_ID_ZOOM, MOD_CONTROL | 0x4000, 0x51);
                 for (int i = 0; i < PointerShortcutShapes.Length; i++)
@@ -142,7 +143,7 @@ namespace Panseo.Views
                 Win32.UnregisterHotKey(helper.Handle, HOTKEY_ID_F3);
                 Win32.UnregisterHotKey(helper.Handle, HOTKEY_ID_F4);
                 if (_captureHotkeyRegistered) Win32.UnregisterHotKey(helper.Handle, HOTKEY_ID_CAPTURE);
-                Win32.UnregisterHotKey(helper.Handle, HOTKEY_ID_PIN);
+                if (_pinHotkeyRegistered) Win32.UnregisterHotKey(helper.Handle, HOTKEY_ID_PIN);
                 Win32.UnregisterHotKey(helper.Handle, HOTKEY_ID_MOUSE);
                 Win32.UnregisterHotKey(helper.Handle, HOTKEY_ID_ZOOM);
                 for (int i = 0; i < PointerShortcutShapes.Length; i++)
@@ -237,10 +238,11 @@ namespace Panseo.Views
                 var kbd = (Win32.KBDLLHOOKSTRUCT)Marshal.PtrToStructure(lParam, typeof(Win32.KBDLLHOOKSTRUCT));
                 int vk = (int)kbd.vkCode;
 
-                // Some Windows configurations reserve F12; keep Ctrl+F12 available through the existing hook.
-                if (!_captureHotkeyRegistered && vk == 0x7B && Keyboard.Modifiers == ModifierKeys.Control)
+                if (Keyboard.Modifiers == ModifierKeys.None &&
+                    ((!_captureHotkeyRegistered && vk == VK_F1) || (!_pinHotkeyRegistered && vk == VK_F3)))
                 {
-                    Dispatcher.BeginInvoke((Action)(() => StartCapture(false)));
+                    bool pin = vk == VK_F3;
+                    Dispatcher.BeginInvoke((Action)(() => StartCapture(pin)));
                     return new IntPtr(1);
                 }
 
@@ -971,8 +973,10 @@ namespace Panseo.Views
                 // 숨긴 메뉴와 포인터가 캡처에 들어가지 않도록 다음 화면 갱신을 기다린다.
                 await Task.Delay(120);
                 var bounds = System.Windows.Forms.SystemInformation.VirtualScreen;
+                var cursor = System.Windows.Forms.Cursor.Position;
+                var suggested = CaptureTargetDetector.Detect(cursor, bounds);
                 BitmapSource snapshot = ScreenCapture.Take(bounds);
-                var selector = new RegionCaptureWindow(snapshot, bounds);
+                var selector = new RegionCaptureWindow(snapshot, bounds, suggested, cursor);
                 if (selector.ShowDialog() == true)
                 {
                     if (pin) new PinnedCaptureWindow(selector.Selection).Show();

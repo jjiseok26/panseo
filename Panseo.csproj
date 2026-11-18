@@ -40,6 +40,8 @@
     <Reference Include="System.Data"><Private>False</Private></Reference>
     <Reference Include="System.Drawing"><Private>False</Private></Reference>
     <Reference Include="System.Windows.Forms"><Private>False</Private></Reference>
+    <Reference Include="UIAutomationClient"><Private>False</Private></Reference>
+    <Reference Include="UIAutomationTypes"><Private>False</Private></Reference>
     <Reference Include="System.Xml"><Private>False</Private></Reference>
     <Reference Include="Microsoft.CSharp"><Private>False</Private></Reference>
     <Reference Include="System.Core"><Private>False</Private></Reference>
@@ -76,6 +78,7 @@
     <Compile Include="src\Views\ScreenZoomWindow.cs" />
     <Compile Include="src\Views\ManualWindow.cs" />
     <Compile Include="src\Helpers\ScreenCapture.cs" />
+    <Compile Include="src\Helpers\CaptureTargetDetector.cs" />
     <Compile Include="src\Helpers\AppIcon.cs" />
     <EmbeddedResource Include="panseo.ico"><LogicalName>Panseo.TrayIcon.ico</LogicalName></EmbeddedResource>
     <EmbeddedResource Include="docs\Manual.txt"><LogicalName>Panseo.Manual.txt</LogicalName></EmbeddedResource>
