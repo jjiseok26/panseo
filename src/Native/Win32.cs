@@ -29,6 +29,7 @@ namespace Panseo.Native
 
         public const int WM_LBUTTONDOWN = 0x0201;
         public const int WM_RBUTTONDOWN = 0x0204;
+        public const int WM_MOUSEWHEEL = 0x020A;
         public const int WM_KEYDOWN = 0x0100;
         public const int WM_KEYUP = 0x0101;
         public const int WM_SYSKEYDOWN = 0x0104;

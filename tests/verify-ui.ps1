@@ -28,6 +28,10 @@ $shortcutSource = Get-Content (Join-Path $root 'src\Views\FloatingToolbarWindow.
 if ($shortcutSource -notmatch 'HOTKEY_ID_CAPTURE, 0x4000, VK_F1' -or $shortcutSource -notmatch 'HOTKEY_ID_PIN, 0x4000, VK_F3') { throw 'F1/F3 global hotkeys missing' }
 if ($shortcutSource -notmatch '_zoomHotkeyRegistered = Win32.RegisterHotKey' -or $shortcutSource -notmatch '_zoomNumpadHotkeyRegistered = Win32.RegisterHotKey' -or $shortcutSource -notmatch 'if \(nCode >= 0 && \(!_zoomHotkeyRegistered \|\| !_zoomNumpadHotkeyRegistered\)\)') { throw 'Zoom hotkey fallback missing' }
 $zoomKeys = $window.GetType().GetMethod('IsZoomKeyCombination',[Reflection.BindingFlags]'Static,NonPublic')
+$pointerSize = $window.GetType().GetMethod('NextPointerSize',[Reflection.BindingFlags]'Static,NonPublic')
+if ($pointerSize.Invoke($null,@([double]65,[int]5)) -ne 70 -or $pointerSize.Invoke($null,@([double]160,[int]5)) -ne 160 -or $pointerSize.Invoke($null,@([double]20,[int]-5)) -ne 20) { throw 'Pointer size keys exceed slider range' }
+$thickness = [Panseo.Views.OverlayWindow].GetMethod('NextThickness',[Reflection.BindingFlags]'Static,NonPublic')
+if ($thickness.Invoke($null,@([double]4,[int]120)) -ne 5 -or $thickness.Invoke($null,@([double]2,[int]-120)) -ne 2 -or $thickness.Invoke($null,@([double]24,[int]120)) -ne 24) { throw 'Drawing wheel thickness bounds failed' }
 foreach ($key in 0x31,0x61) {
     if (-not $zoomKeys.Invoke($null,@([int]0x100,[uint32]$key,$true,$false,$false))) { throw "Ctrl+1 key rejected: $key" }
     if ($zoomKeys.Invoke($null,@([int]0x100,[uint32]$key,$true,$true,$false))) { throw 'Ctrl+Shift+1 conflicts with zoom' }

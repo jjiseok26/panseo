@@ -275,6 +275,15 @@ namespace Panseo.Views
                 // 글자 넣기 상자에서 타이핑 중일 때는 텍스트 입력을 위해 단축키 가로채기 통과
                 if (!AppSettings.Instance.IsTextEditing)
                 {
+                    if (AppSettings.Instance.PointerShape != PointerShape.None &&
+                        (Keyboard.Modifiers & (ModifierKeys.Control | ModifierKeys.Alt)) == ModifierKeys.None &&
+                        (vk == 0xBB || vk == 0x6B || vk == 0xBD || vk == 0x6D))
+                    {
+                        int step = vk == 0xBB || vk == 0x6B ? 5 : -5;
+                        Dispatcher.BeginInvoke((Action)(() => SliderPointerSize.Value =
+                            NextPointerSize(SliderPointerSize.Value, step)));
+                        return new IntPtr(1);
+                    }
                     bool isDrawingActive = AppSettings.Instance.CurrentTool != DrawingTool.None;
                     bool isMenuOpen = _isMenuOpen;
 
@@ -295,6 +304,11 @@ namespace Panseo.Views
         {
             return (message == Win32.WM_KEYDOWN || message == Win32.WM_SYSKEYDOWN) &&
                 (key == 0x31 || key == 0x61) && control && !shift && !alt;
+        }
+
+        internal static double NextPointerSize(double current, int step)
+        {
+            return Math.Max(20, Math.Min(160, current + step));
         }
 
         private bool HandleDrawingShortcut(int vk)
@@ -460,6 +474,8 @@ namespace Panseo.Views
                 {
                     UpdateCircleVisual();
                 }
+                else if (e.PropertyName == "StrokeThickness" && SliderStrokeThickness.Value != AppSettings.Instance.StrokeThickness)
+                    SliderStrokeThickness.Value = AppSettings.Instance.StrokeThickness;
                 else if (e.PropertyName == "PointerShape")
                 {
                     UpdatePointerRadioButtons(AppSettings.Instance.PointerShape);
@@ -1012,7 +1028,12 @@ namespace Panseo.Views
                 if (selector.ShowDialog() == true)
                 {
                     if (pin) new PinnedCaptureWindow(selector.Selection).Show();
-                    else new CaptureEditorWindow(selector.Selection).Show();
+                    else
+                    {
+                        if (!CaptureFiles.Copy(selector.Selection))
+                            MessageBox.Show("캡처 이미지를 클립보드에 복사할 수 없습니다.", "Panseo", MessageBoxButton.OK, MessageBoxImage.Error);
+                        new CaptureEditorWindow(selector.Selection).Show();
+                    }
                 }
             }
             catch (Exception ex)

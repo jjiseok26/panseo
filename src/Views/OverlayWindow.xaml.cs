@@ -177,6 +177,19 @@ namespace Panseo.Views
 
         private IntPtr HookCallback(int nCode, IntPtr wParam, IntPtr lParam)
         {
+            if (nCode >= 0 && wParam.ToInt32() == Win32.WM_MOUSEWHEEL &&
+                AppSettings.Instance.CurrentTool != DrawingTool.None)
+            {
+                var wheel = (Win32.MSLLHOOKSTRUCT)Marshal.PtrToStructure(lParam, typeof(Win32.MSLLHOOKSTRUCT));
+                if (TargetScreen != null && TargetScreen.Bounds.Contains(wheel.pt.X, wheel.pt.Y) &&
+                    Win32.GetAncestor(Win32.WindowFromPoint(wheel.pt), 2) == _hwnd)
+                {
+                    int delta = (short)(wheel.mouseData >> 16);
+                    Dispatcher.BeginInvoke((Action)(() => AppSettings.Instance.StrokeThickness =
+                        NextThickness(AppSettings.Instance.StrokeThickness, delta)));
+                    return new IntPtr(1);
+                }
+            }
             if (nCode >= 0 && AppSettings.Instance.IsClickRippleEnabled)
             {
                 int msg = wParam.ToInt32();
@@ -196,6 +209,11 @@ namespace Panseo.Views
                 }
             }
             return Win32.CallNextHookEx(_hookId, nCode, wParam, lParam);
+        }
+
+        internal static double NextThickness(double current, int delta)
+        {
+            return Math.Max(2, Math.Min(24, current + Math.Sign(delta)));
         }
 
         private void OnCursorTimerTick(object sender, EventArgs e)

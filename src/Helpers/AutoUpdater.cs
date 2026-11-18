@@ -72,15 +72,15 @@ namespace Panseo.Helpers
             if (release.assets == null) throw new InvalidDataException("업데이트 파일이 없습니다.");
             foreach (var asset in release.assets)
             {
-                if (asset.name != "Panseo.exe") continue;
-                string expectedUrl = "https://github.com/" + Repository + "/releases/download/" + release.tag_name + "/Panseo.exe";
+                if (asset.name != "panseo_portable.exe") continue;
+                string expectedUrl = "https://github.com/" + Repository + "/releases/download/" + release.tag_name + "/panseo_portable.exe";
                 if (asset.browser_download_url != expectedUrl || asset.digest == null ||
                     !Regex.IsMatch(asset.digest, @"^sha256:[0-9a-fA-F]{64}$") || asset.size < 1024 || asset.size > 25 * 1024 * 1024)
                     throw new InvalidDataException("업데이트 주소, 크기 또는 SHA-256 정보가 올바르지 않습니다.");
                 release.assets = new[] { asset };
                 return release;
             }
-            throw new InvalidDataException("Panseo.exe 업데이트 파일이 없습니다.");
+            throw new InvalidDataException("panseo_portable.exe 업데이트 파일이 없습니다.");
         }
 
         internal static bool VerifyFile(string path, ReleaseInfo release)

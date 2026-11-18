@@ -20,9 +20,8 @@ try {
         if ($LASTEXITCODE -ne 0) { throw "Failed: $test" }
     }
     [void](New-Item -ItemType Directory -Path dist -Force)
-    Copy-Item -LiteralPath bin\Release\Panseo.exe -Destination dist\Panseo.exe -Force
+    Remove-Item -LiteralPath dist\Panseo.exe,dist\panseo_portable.zip -ErrorAction SilentlyContinue
     Copy-Item -LiteralPath bin\Release\Panseo.exe -Destination dist\panseo_portable.exe -Force
-    Compress-Archive -LiteralPath dist\panseo_portable.exe,README.md -DestinationPath dist\panseo_portable.zip -Force
     Copy-Item -LiteralPath tests\update-guide.png -Destination dist\update-guide.png -Force
-    Get-FileHash -LiteralPath dist\Panseo.exe -Algorithm SHA256
+    Get-FileHash -LiteralPath dist\panseo_portable.exe -Algorithm SHA256
 } finally { Pop-Location }

@@ -20,23 +20,28 @@ Add-Type -TypeDefinition 'using System.Reflection; [assembly:AssemblyVersion("1.
 $hash = [string](Get-FileHash -LiteralPath $source -Algorithm SHA256).Hash
 $release = @{
     tag_name = 'v1.1.0'; draft = $false; prerelease = $false
-    assets = @(@{ name = 'Panseo.exe'; browser_download_url = 'https://github.com/jjiseok26/panseo/releases/download/v1.1.0/Panseo.exe'; digest = 'sha256:' + $hash.ToLowerInvariant(); size = (Get-Item -LiteralPath $source).Length })
+    assets = @(@{ name = 'panseo_portable.exe'; browser_download_url = 'https://github.com/jjiseok26/panseo/releases/download/v1.1.0/panseo_portable.exe'; digest = 'sha256:' + $hash.ToLowerInvariant(); size = (Get-Item -LiteralPath $source).Length })
 }
 $json = $release | ConvertTo-Json -Depth 6
 $info = $parse.Invoke($null, @([string]$json, [version]'1.0.0.0'))
 if ($null -eq $info -or -not $verify.Invoke($null,@([string]$source,$info))) { throw 'Valid update rejected' }
+$release.assets[0].name = 'Panseo.exe'
+$rejected = $false
+try { [void]$parse.Invoke($null,@([string]($release | ConvertTo-Json -Depth 6),[version]'1.0.0.0')) } catch { $rejected = $true }
+if (-not $rejected) { throw 'Duplicate legacy executable accepted' }
+$release.assets[0].name = 'panseo_portable.exe'
 if ($null -ne $parse.Invoke($null,@([string]$json,[version]'1.1.0.0'))) { throw 'Same version accepted' }
 if ($verify.Invoke($null,@([string]$target,$info))) { throw 'Incorrect payload accepted' }
 $release.prerelease = $true
 if ($null -ne $parse.Invoke($null,@([string]($release | ConvertTo-Json -Depth 6),[version]'1.0.0.0'))) { throw 'Prerelease accepted' }
 $release.prerelease = $false
-foreach ($badUrl in 'https://example.com/Panseo.exe', 'http://github.com/jjiseok26/panseo/releases/download/v1.1.0/Panseo.exe') {
+foreach ($badUrl in 'https://example.com/panseo_portable.exe', 'http://github.com/jjiseok26/panseo/releases/download/v1.1.0/panseo_portable.exe') {
     $release.assets[0].browser_download_url = $badUrl
     $rejected = $false
     try { [void]$parse.Invoke($null,@([string]($release | ConvertTo-Json -Depth 6),[version]'1.0.0.0')) } catch { $rejected = $true }
     if (-not $rejected) { throw 'Untrusted update URL accepted' }
 }
-$release.assets[0].browser_download_url = 'https://github.com/jjiseok26/panseo/releases/download/v1.1.0/Panseo.exe'
+$release.assets[0].browser_download_url = 'https://github.com/jjiseok26/panseo/releases/download/v1.1.0/panseo_portable.exe'
 $release.assets[0].digest = $null
 $rejected = $false
 try { [void]$parse.Invoke($null,@([string]($release | ConvertTo-Json -Depth 6),[version]'1.0.0.0')) } catch { $rejected = $true }

@@ -39,6 +39,7 @@ namespace Panseo.Views
         private bool _drawing;
         private long _nextNumber = 1;
         private readonly TextBox _startNumberInput;
+        private readonly TextBlock _strokeValue;
 
         public CaptureEditorWindow(BitmapSource image) : this(image, false) { }
 
@@ -85,6 +86,27 @@ namespace Panseo.Views
             AddButton(tools, "저장 F1", SaveCapture);
             AddButton(tools, "화면 고정 F3", PinCapture);
             AddButton(tools, "전체 지우기", ClearAll);
+            tools.Children.Add(new TextBlock { Text = "색상", Foreground = Foreground,
+                VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(6, 0, 2, 0) });
+            AddColor(tools, Colors.Red, "빨강");
+            AddColor(tools, Colors.Yellow, "노랑");
+            AddColor(tools, Colors.LimeGreen, "초록");
+            AddColor(tools, Colors.DeepSkyBlue, "파랑");
+            AddColor(tools, Colors.White, "흰색");
+            AddColor(tools, Colors.Black, "검정");
+            tools.Children.Add(new TextBlock { Text = "굵기", Foreground = Foreground,
+                VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(8, 0, 3, 0) });
+            var stroke = new Slider { Minimum = 2, Maximum = 24, Value = AppSettings.Instance.StrokeThickness,
+                Width = 105, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(3) };
+            _strokeValue = new TextBlock { Text = ((int)stroke.Value).ToString(), Foreground = Foreground,
+                Width = 24, VerticalAlignment = VerticalAlignment.Center };
+            stroke.ValueChanged += (s, e) =>
+            {
+                AppSettings.Instance.StrokeThickness = e.NewValue;
+                _strokeValue.Text = ((int)e.NewValue).ToString();
+            };
+            tools.Children.Add(stroke);
+            tools.Children.Add(_strokeValue);
             if (screenZoom)
             {
                 AddButton(tools, "100%", () => ZoomView.Reset());
@@ -140,6 +162,15 @@ namespace Panseo.Views
             var button = new Button { Content = label, Padding = new Thickness(8, 5, 8, 5), Margin = new Thickness(3),
                 Style = CreateMaterialStyle(typeof(Button)) };
             button.Click += (s, e) => action();
+            panel.Children.Add(button);
+        }
+
+        private static void AddColor(Panel panel, Color color, string name)
+        {
+            var button = new Button { Width = 28, Height = 28, Margin = new Thickness(3),
+                Background = new SolidColorBrush(color), ToolTip = name,
+                Style = CreateMaterialStyle(typeof(Button)) };
+            button.Click += (s, e) => AppSettings.Instance.DrawingColor = color;
             panel.Children.Add(button);
         }
 
@@ -463,6 +494,19 @@ namespace Panseo.Views
 
     internal static class CaptureFiles
     {
+        internal static bool Copy(BitmapSource bitmap)
+        {
+            for (int attempt = 0; attempt < 3; attempt++)
+            {
+                try { Clipboard.SetImage(bitmap); Clipboard.Flush(); return true; }
+                catch (System.Runtime.InteropServices.ExternalException)
+                {
+                    if (attempt < 2) Thread.Sleep(50);
+                }
+            }
+            return false;
+        }
+
         public static bool Save(Window owner, BitmapSource bitmap)
         {
             try
@@ -556,16 +600,8 @@ namespace Panseo.Views
 
         private void CopyImage()
         {
-            for (int attempt = 0; attempt < 3; attempt++)
-            {
-                try { Clipboard.SetImage(_image); Clipboard.Flush(); return; }
-                catch (System.Runtime.InteropServices.ExternalException ex)
-                {
-                    if (attempt == 2) MessageBox.Show(this, "이미지를 복사할 수 없습니다: " + ex.Message,
-                        "Panseo", MessageBoxButton.OK, MessageBoxImage.Error);
-                    else Thread.Sleep(50);
-                }
-            }
+            if (!CaptureFiles.Copy(_image)) MessageBox.Show(this, "이미지를 클립보드에 복사할 수 없습니다.",
+                "Panseo", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 }
