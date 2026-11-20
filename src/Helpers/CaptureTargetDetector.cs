@@ -13,9 +13,6 @@ namespace Panseo.Helpers
     {
         internal static Rectangle Detect(Point cursor, Rectangle desktop)
         {
-            var image = ImageAt(cursor, desktop);
-            if (!image.IsEmpty) return image;
-
             var point = new Win32.POINT { X = cursor.X, Y = cursor.Y };
             IntPtr window = Win32.GetAncestor(Win32.WindowFromPoint(point), 2); // GA_ROOT
             uint ownProcess = (uint)Process.GetCurrentProcess().Id;
@@ -28,35 +25,53 @@ namespace Panseo.Helpers
                 Win32.RECT rect;
                 if (!Win32.GetWindowRect(window, out rect)) continue;
                 var region = Rectangle.Intersect(desktop, Rectangle.FromLTRB(rect.Left, rect.Top, rect.Right, rect.Bottom));
-                if (region.Contains(cursor) && region.Width >= 24 && region.Height >= 24) return region;
+                if (region.Contains(cursor) && region.Width >= 24 && region.Height >= 24)
+                {
+                    var element = ElementAt(window, cursor, desktop);
+                    return element.IsEmpty ? region : element;
+                }
             }
             return Rectangle.Intersect(desktop, Screen.FromPoint(cursor).Bounds);
         }
 
-        private static Rectangle ImageAt(Point cursor, Rectangle desktop)
+        private static Rectangle ElementAt(IntPtr window, Point cursor, Rectangle desktop)
         {
             try
             {
-                var element = AutomationElement.FromPoint(new System.Windows.Point(cursor.X, cursor.Y));
-                for (int i = 0; element != null && i < 20; i++)
+                var parent = AutomationElement.FromHandle(window);
+                var walker = TreeWalker.RawViewWalker;
+                var selected = Rectangle.Empty;
+                for (int depth = 0; parent != null && depth < 20; depth++)
                 {
-                    if (element.Current.ControlType == ControlType.Image &&
-                        element.Current.ProcessId != Process.GetCurrentProcess().Id)
+                    AutomationElement best = null;
+                    var bestRegion = Rectangle.Empty;
+                    long bestArea = long.MaxValue;
+                    var child = walker.GetFirstChild(parent);
+                    for (int sibling = 0; child != null && sibling < 150; sibling++, child = walker.GetNextSibling(child))
                     {
-                        var box = element.Current.BoundingRectangle;
+                        var box = child.Current.BoundingRectangle;
                         if (box.IsEmpty || box.Width < 24 || box.Height < 24 ||
                             double.IsNaN(box.Left) || double.IsNaN(box.Top) ||
-                            double.IsInfinity(box.Left) || double.IsInfinity(box.Top))
-                        {
-                            element = TreeWalker.RawViewWalker.GetParent(element);
-                            continue;
-                        }
+                            double.IsNaN(box.Right) || double.IsNaN(box.Bottom) ||
+                            double.IsInfinity(box.Left) || double.IsInfinity(box.Top) ||
+                            double.IsInfinity(box.Right) || double.IsInfinity(box.Bottom) ||
+                            box.Left < int.MinValue || box.Top < int.MinValue ||
+                            box.Right > int.MaxValue || box.Bottom > int.MaxValue) continue;
                         var region = Rectangle.Intersect(desktop, Rectangle.FromLTRB((int)Math.Floor(box.Left),
                             (int)Math.Floor(box.Top), (int)Math.Ceiling(box.Right), (int)Math.Ceiling(box.Bottom)));
-                        if (region.Contains(cursor) && region.Width >= 24 && region.Height >= 24) return region;
+                        long area = (long)region.Width * region.Height;
+                        if (region.Contains(cursor) && region.Width >= 24 && region.Height >= 24 && area < bestArea)
+                        {
+                            best = child;
+                            bestRegion = region;
+                            bestArea = area;
+                        }
                     }
-                    element = TreeWalker.RawViewWalker.GetParent(element);
+                    if (best == null) break;
+                    selected = bestRegion;
+                    parent = best;
                 }
+                return selected;
             }
             catch (ElementNotAvailableException) { }
             catch (COMException) { }

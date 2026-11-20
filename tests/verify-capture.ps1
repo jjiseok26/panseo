@@ -73,8 +73,19 @@ $editor = [Panseo.Views.CaptureEditorWindow]::new($image)
 $toolPanel = $editor.Content.Children[0]
 $colors = @($toolPanel.Children | Where-Object { $_ -is [Windows.Controls.Button] -and $_.ToolTip -eq '빨강' })
 $stroke = @($toolPanel.Children | Where-Object { $_ -is [Windows.Controls.Slider] })
-$picker = @($toolPanel.Children | Where-Object { $_ -is [Windows.Controls.Button] -and $_.Content -eq '🎨 색상 선택' })
+$picker = @($toolPanel.Children | Where-Object { $_ -is [Windows.Controls.Button] -and $_.ToolTip -eq '색상 선택' })
 if ($colors.Count -ne 1 -or $stroke.Count -ne 1 -or $picker.Count -ne 1) { throw 'Capture color, picker, or stroke controls missing' }
+$iconControls = @($toolPanel.Children | Where-Object { $_ -is [Windows.Controls.Primitives.ButtonBase] })
+foreach ($control in $iconControls) {
+    if (-not $control.ToolTip -or ([string]$control.Content).Length -gt 2) { throw 'Capture editor icon or tooltip missing' }
+}
+if ($iconControls.Count -lt 16) { throw 'Capture editor toolbar actions missing' }
+$colorPicker = $assembly.GetType('Panseo.Helpers.ColorPicker')
+$fromHsv = $colorPicker.GetMethod('FromHsv',[Reflection.BindingFlags]'Static,NonPublic')
+foreach ($sample in @(@(0,255,0,0),@(120,0,255,0),@(240,0,0,255))) {
+    $color = $fromHsv.Invoke($null,@([double]$sample[0],[double]1,[double]1))
+    if ($color.R -ne $sample[1] -or $color.G -ne $sample[2] -or $color.B -ne $sample[3]) { throw 'HSV color picker conversion failed' }
+}
 $colors[0].RaiseEvent([Windows.RoutedEventArgs]::new([Windows.Controls.Primitives.ButtonBase]::ClickEvent))
 if ([Panseo.Models.AppSettings]::Instance.DrawingColor -ne [Windows.Media.Colors]::Red) { throw 'Capture color selection failed' }
 $stroke[0].Value = 12

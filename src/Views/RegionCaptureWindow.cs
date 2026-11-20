@@ -6,6 +6,7 @@ using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
+using System.Windows.Threading;
 using Panseo.Helpers;
 using Panseo.Native;
 
@@ -19,6 +20,7 @@ namespace Panseo.Views
         private readonly Rectangle[] _handles = new Rectangle[8];
         private readonly Button _confirm;
         private readonly TextBlock _instruction;
+        private readonly DispatcherTimer _hoverTimer;
         private Point _start;
         private Rect _selection;
         private Rect _dragOriginal;
@@ -28,6 +30,8 @@ namespace Panseo.Views
         private bool _selecting;
         private bool _automaticSelection;
         private bool _initialSelectionApplied;
+        private bool _manualSelection;
+        private System.Drawing.Rectangle _lastTarget;
         public BitmapSource Selection { get; private set; }
 
         public RegionCaptureWindow(BitmapSource snapshot, System.Drawing.Rectangle bounds)
@@ -36,6 +40,20 @@ namespace Panseo.Views
         public RegionCaptureWindow(BitmapSource snapshot, System.Drawing.Rectangle bounds,
             System.Drawing.Rectangle suggested, System.Drawing.Point cursor)
         {
+            _lastTarget = suggested;
+            _hoverTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(90) };
+            _hoverTimer.Tick += (s, e) =>
+            {
+                _hoverTimer.Stop();
+                if (_selecting || _manualSelection || _surface.ActualWidth <= 0) return;
+                var pointer = System.Windows.Forms.Cursor.Position;
+                PositionInstruction(bounds, pointer);
+                var target = CaptureTargetDetector.Detect(pointer, bounds);
+                if (target == _lastTarget || target.Width < 24 || target.Height < 24) return;
+                _lastTarget = target;
+                _automaticSelection = true;
+                UpdateSelection(MapToViewport(target, bounds, _surface.RenderSize));
+            };
             Title = "Panseo 영역 선택";
             WindowStyle = WindowStyle.None;
             ResizeMode = ResizeMode.NoResize;
@@ -59,7 +77,7 @@ namespace Panseo.Views
             _surface.Children.Add(overlay);
             _instruction = new TextBlock
             {
-                Text = "자동 선택된 영역을 확정하거나 드래그로 다시 선택하세요 · Enter: 확정 · Esc: 취소",
+                Text = "포인터 이동: 자동 선택 · 드래그: 직접 선택 · Enter: 확정 · Esc: 취소",
                 Foreground = Brushes.White, Background = new SolidColorBrush(Color.FromArgb(220, 24, 24, 38)),
                 Padding = new Thickness(16, 10, 16, 10), FontSize = 16,
                 TextWrapping = TextWrapping.Wrap, HorizontalAlignment = HorizontalAlignment.Left,
@@ -88,9 +106,12 @@ namespace Panseo.Views
                 _automaticSelection = true;
                 UpdateSelection(MapToViewport(region, bounds, _surface.RenderSize));
             };
+            Closed += (s, e) => _hoverTimer.Stop();
             _surface.MouseLeftButtonDown += (s, e) =>
             {
                 if (_confirm.IsMouseOver) return;
+                _manualSelection = true;
+                _hoverTimer.Stop();
                 BeginSelectionAt(e.GetPosition(_surface));
                 _selecting = true;
                 _surface.CaptureMouse();
@@ -99,7 +120,11 @@ namespace Panseo.Views
             {
                 var point = e.GetPosition(_surface);
                 if (_selecting) UpdateDrag(point);
-                else _surface.Cursor = CursorAt(point);
+                else
+                {
+                    _surface.Cursor = CursorAt(point);
+                    if (!_manualSelection && !_hoverTimer.IsEnabled) _hoverTimer.Start();
+                }
             };
             _surface.MouseLeftButtonUp += (s, e) =>
             {
@@ -110,7 +135,7 @@ namespace Panseo.Views
                 _confirm.IsEnabled = _selection.Width >= 3 && _selection.Height >= 3;
             };
             MouseRightButtonUp += (s, e) => Close();
-            KeyDown += (s, e) =>
+            PreviewKeyDown += (s, e) =>
             {
                 if (e.Key == Key.Escape) Close();
                 else if (e.Key == Key.Enter) { Confirm(snapshot); e.Handled = true; }

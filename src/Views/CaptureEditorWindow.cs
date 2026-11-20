@@ -60,44 +60,42 @@ namespace Panseo.Views
             root.RowDefinitions.Add(new RowDefinition());
             root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
             var tools = new WrapPanel { Margin = new Thickness(8), Background = new SolidColorBrush(Color.FromRgb(48, 49, 52)) };
-            AddTool(tools, "이동 Ctrl+M", DrawingTool.None);
-            AddTool(tools, "펜 Ctrl+P", DrawingTool.Pen);
-            AddTool(tools, "형광펜 Ctrl+H", DrawingTool.Highlighter);
-            AddTool(tools, "직선 Ctrl+L", DrawingTool.Line);
-            AddTool(tools, "지우개 Ctrl+E", DrawingTool.Eraser);
-            AddTool(tools, "사각형 Ctrl+R", DrawingTool.Rectangle);
-            AddTool(tools, "원 Ctrl+O", DrawingTool.Ellipse);
-            AddTool(tools, "화살표 Ctrl+A", DrawingTool.Arrow);
-            AddTool(tools, "글자 Ctrl+T", DrawingTool.Text);
-            AddTool(tools, "번호 Ctrl+N", DrawingTool.Number);
-            AddButton(tools, "번호 1부터", ResetNumbering);
+            AddTool(tools, "✥", "이동 (Ctrl+M)", DrawingTool.None);
+            AddTool(tools, "✎", "펜 (Ctrl+P)", DrawingTool.Pen);
+            AddTool(tools, "▰", "형광펜 (Ctrl+H)", DrawingTool.Highlighter);
+            AddTool(tools, "╱", "직선 (Ctrl+L)", DrawingTool.Line);
+            AddTool(tools, "⌫", "지우개 (Ctrl+E)", DrawingTool.Eraser);
+            AddTool(tools, "□", "사각형 (Ctrl+R)", DrawingTool.Rectangle);
+            AddTool(tools, "○", "원 (Ctrl+O)", DrawingTool.Ellipse);
+            AddTool(tools, "➜", "화살표 (Ctrl+A)", DrawingTool.Arrow);
+            AddTool(tools, "T", "글자 (Ctrl+T)", DrawingTool.Text);
+            AddTool(tools, "①", "번호 (Ctrl+N)", DrawingTool.Number);
+            AddButton(tools, "↺", "번호 1부터 시작", ResetNumbering);
             var numberControls = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(3) };
-            numberControls.Children.Add(new TextBlock { Text = "시작번호", Foreground = Brushes.White, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0,0,5,0) });
-            _startNumberInput = new TextBox { Text = "1", Width = 82, Padding = new Thickness(4), VerticalContentAlignment = VerticalAlignment.Center,
+            numberControls.Children.Add(new TextBlock { Text = "№", ToolTip = "시작 번호", Foreground = Brushes.White, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0,0,5,0) });
+            _startNumberInput = new TextBox { Text = "1", Width = 55, Padding = new Thickness(4), VerticalContentAlignment = VerticalAlignment.Center,
                 Background = new SolidColorBrush(Color.FromRgb(60, 64, 67)), Foreground = Foreground,
                 BorderBrush = new SolidColorBrush(Color.FromRgb(95, 99, 104)), ToolTip = "1~2147483647 입력 후 적용 또는 Enter" };
             _startNumberInput.KeyDown += (s, e) => { if (e.Key == Key.Enter) { ApplyStartNumber(); e.Handled = true; } };
             numberControls.Children.Add(_startNumberInput);
-            AddButton(numberControls, "번호 적용", ApplyStartNumber);
-            AddButton(numberControls, "작게 −", () => ChangeNumberSize(-0.25));
-            AddButton(numberControls, "크게 +", () => ChangeNumberSize(0.25));
+            AddButton(numberControls, "✓", "시작 번호 적용 (Enter)", ApplyStartNumber);
+            AddButton(numberControls, "−", "번호 크기 줄이기", () => ChangeNumberSize(-0.25));
+            AddButton(numberControls, "+", "번호 크기 키우기", () => ChangeNumberSize(0.25));
             tools.Children.Add(numberControls);
-            AddButton(tools, "되돌리기 Ctrl+Z", Undo);
-            AddButton(tools, "다시 실행 Ctrl+Y", Redo);
-            AddButton(tools, "저장 F1", SaveCapture);
-            AddButton(tools, "화면 고정 F3", PinCapture);
-            AddButton(tools, "전체 지우기", ClearAll);
-            tools.Children.Add(new TextBlock { Text = "색상", Foreground = Foreground,
-                VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(6, 0, 2, 0) });
+            AddButton(tools, "↶", "되돌리기 (Ctrl+Z)", Undo);
+            AddButton(tools, "↷", "다시 실행 (Ctrl+Y)", Redo);
+            AddButton(tools, "▣", "캡처 저장 (F1)", SaveCapture);
+            AddButton(tools, "⚑", "화면 고정 (F3)", PinCapture);
+            AddButton(tools, "⌧", "전체 지우기", ClearAll);
             AddColor(tools, Colors.Red, "빨강");
             AddColor(tools, Colors.Yellow, "노랑");
             AddColor(tools, Colors.LimeGreen, "초록");
             AddColor(tools, Colors.DeepSkyBlue, "파랑");
             AddColor(tools, Colors.White, "흰색");
             AddColor(tools, Colors.Black, "검정");
-            AddButton(tools, "🎨 색상 선택", ChooseDrawingColor);
-            tools.Children.Add(new TextBlock { Text = "굵기", Foreground = Foreground,
-                VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(8, 0, 3, 0) });
+            AddButton(tools, "◉", "색상 선택", ChooseDrawingColor);
+            tools.Children.Add(new TextBlock { Text = "굵기", ToolTip = "선 굵기 · 휠로도 조절", Foreground = Foreground,
+                VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(6, 0, 3, 0) });
             _strokeSlider = new Slider { Minimum = 2, Maximum = 24, Value = AppSettings.Instance.StrokeThickness,
                 Width = 105, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(3) };
             _strokeValue = new TextBlock { Text = ((int)_strokeSlider.Value).ToString(), Foreground = Foreground,
@@ -111,8 +109,8 @@ namespace Panseo.Views
             tools.Children.Add(_strokeValue);
             if (screenZoom)
             {
-                AddButton(tools, "100%", () => ZoomView.Reset());
-                AddButton(tools, "닫기 Esc", Close);
+                AddButton(tools, "⊙", "확대/축소 초기화 (100%)", () => ZoomView.Reset());
+                AddButton(tools, "×", "닫기 (Esc)", Close);
             }
             root.Children.Add(tools);
             _canvas = new Canvas
@@ -155,19 +153,20 @@ namespace Panseo.Views
             }
         }
 
-        private void AddTool(Panel panel, string label, DrawingTool tool)
+        private void AddTool(Panel panel, string icon, string description, DrawingTool tool)
         {
-            var button = new RadioButton { Content = label, GroupName = "CaptureTools", Margin = new Thickness(4),
-                Padding = new Thickness(8, 5, 8, 5), IsChecked = tool == _tool,
+            var button = new RadioButton { Content = icon, ToolTip = description, GroupName = "CaptureTools", Margin = new Thickness(2),
+                Width = 34, Height = 34, FontSize = 17, IsChecked = tool == _tool,
                 Style = CreateMaterialStyle(typeof(RadioButton)) };
             button.Click += (s, e) => SelectTool(tool);
             _tools.Add(tool, button);
             panel.Children.Add(button);
         }
 
-        private static void AddButton(Panel panel, string label, Action action)
+        private static void AddButton(Panel panel, string icon, string description, Action action)
         {
-            var button = new Button { Content = label, Padding = new Thickness(8, 5, 8, 5), Margin = new Thickness(3),
+            var button = new Button { Content = icon, ToolTip = description, Width = 34, Height = 34,
+                FontSize = 17, Margin = new Thickness(2),
                 Style = CreateMaterialStyle(typeof(Button)) };
             button.Click += (s, e) => action();
             panel.Children.Add(button);
