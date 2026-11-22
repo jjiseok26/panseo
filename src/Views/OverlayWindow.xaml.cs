@@ -8,6 +8,7 @@ using System.Windows.Forms;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
+using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 using System.Windows.Threading;
 using Panseo.Helpers;
@@ -177,17 +178,25 @@ namespace Panseo.Views
 
         private IntPtr HookCallback(int nCode, IntPtr wParam, IntPtr lParam)
         {
-            if (nCode >= 0 && wParam.ToInt32() == Win32.WM_MOUSEWHEEL &&
-                AppSettings.Instance.CurrentTool != DrawingTool.None)
+            if (nCode >= 0 && wParam.ToInt32() == Win32.WM_MOUSEWHEEL)
             {
                 var wheel = (Win32.MSLLHOOKSTRUCT)Marshal.PtrToStructure(lParam, typeof(Win32.MSLLHOOKSTRUCT));
-                if (TargetScreen != null && TargetScreen.Bounds.Contains(wheel.pt.X, wheel.pt.Y) &&
-                    Win32.GetAncestor(Win32.WindowFromPoint(wheel.pt), 2) == _hwnd)
+                if (TargetScreen != null && TargetScreen.Bounds.Contains(wheel.pt.X, wheel.pt.Y))
                 {
                     int delta = (short)(wheel.mouseData >> 16);
-                    Dispatcher.BeginInvoke((Action)(() => AppSettings.Instance.StrokeThickness =
-                        NextThickness(AppSettings.Instance.StrokeThickness, delta)));
-                    return new IntPtr(1);
+                    if (delta != 0 && Win32.GetAsyncKeyState(0x11) < 0)
+                    {
+                        Dispatcher.BeginInvoke((Action)(() => AppSettings.Instance.PointerSize =
+                            FloatingToolbarWindow.NextPointerSize(AppSettings.Instance.PointerSize, Math.Sign(delta) * 5)));
+                        return new IntPtr(1);
+                    }
+                    if (delta != 0 && AppSettings.Instance.CurrentTool != DrawingTool.None &&
+                        Win32.GetAncestor(Win32.WindowFromPoint(wheel.pt), 2) == _hwnd)
+                    {
+                        Dispatcher.BeginInvoke((Action)(() => AppSettings.Instance.StrokeThickness =
+                            NextThickness(AppSettings.Instance.StrokeThickness, delta)));
+                        return new IntPtr(1);
+                    }
                 }
             }
             if (nCode >= 0 && AppSettings.Instance.IsClickRippleEnabled)
@@ -214,6 +223,25 @@ namespace Panseo.Views
         internal static double NextThickness(double current, int delta)
         {
             return Math.Max(2, Math.Min(24, current + Math.Sign(delta)));
+        }
+
+        internal BitmapSource RenderDrawing()
+        {
+            if (TextEditorBox.Visibility == Visibility.Visible) CommitText();
+            if (DrawingCanvas.Children.Count == 0) return null;
+            int width = TargetScreen.Bounds.Width, height = TargetScreen.Bounds.Height;
+            return RenderDrawingCanvas(DrawingCanvas, width, height);
+        }
+
+        internal static BitmapSource RenderDrawingCanvas(Canvas canvas, int width, int height)
+        {
+            var visual = new DrawingVisual();
+            using (var context = visual.RenderOpen())
+                context.DrawRectangle(new VisualBrush(canvas), null, new Rect(0, 0, width, height));
+            var bitmap = new RenderTargetBitmap(width, height, 96, 96, PixelFormats.Pbgra32);
+            bitmap.Render(visual);
+            bitmap.Freeze();
+            return bitmap;
         }
 
         private void OnCursorTimerTick(object sender, EventArgs e)

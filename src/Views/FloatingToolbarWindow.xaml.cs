@@ -480,6 +480,8 @@ namespace Panseo.Views
                 {
                     UpdateCircleVisual();
                 }
+                else if (e.PropertyName == "PointerSize" && SliderPointerSize.Value != AppSettings.Instance.PointerSize)
+                    SliderPointerSize.Value = AppSettings.Instance.PointerSize;
                 else if (e.PropertyName == "StrokeThickness" && SliderStrokeThickness.Value != AppSettings.Instance.StrokeThickness)
                     SliderStrokeThickness.Value = AppSettings.Instance.StrokeThickness;
                 else if (e.PropertyName == "PointerShape")
@@ -637,7 +639,28 @@ namespace Panseo.Views
 
         private void BtnClose_Click(object sender, RoutedEventArgs e)
         {
-            CloseMenu();
+            Application.Current.Shutdown();
+        }
+
+        public void RestoreSettings()
+        {
+            var settings = AppSettings.Instance;
+            SliderPointerSize.Value = settings.PointerSize;
+            SliderStrokeThickness.Value = settings.StrokeThickness;
+            ChkClickRipple.IsChecked = settings.IsClickRippleEnabled;
+            ChkBlackboard.IsChecked = settings.IsBlackboardActive;
+            UpdatePointerRadioButtons(settings.PointerShape);
+            UpdateToolRadioButtons(settings.CurrentTool);
+            if (settings.CurrentTool != DrawingTool.None) _lastActiveDrawingTool = settings.CurrentTool;
+            if (settings.PointerShape != PointerShape.None) _lastActivePointerShape = settings.PointerShape;
+            if (settings.ToolbarLeft.HasValue && settings.ToolbarTop.HasValue &&
+                !double.IsNaN(settings.ToolbarLeft.Value) && !double.IsNaN(settings.ToolbarTop.Value))
+            {
+                Left = Math.Max(SystemParameters.VirtualScreenLeft, Math.Min(SystemParameters.VirtualScreenLeft + SystemParameters.VirtualScreenWidth - 66, settings.ToolbarLeft.Value));
+                Top = Math.Max(SystemParameters.VirtualScreenTop, Math.Min(SystemParameters.VirtualScreenTop + SystemParameters.VirtualScreenHeight - 66, settings.ToolbarTop.Value));
+            }
+            if (settings.MenuOpen) OpenMenu();
+            UpdateCircleVisual();
         }
 
         private void Header_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -908,6 +931,19 @@ namespace Panseo.Views
         {
             if (_zoomWindow != null) _zoomWindow.SaveCapture();
             else StartCapture(false);
+        }
+
+        private void BtnSaveDrawing_Click(object sender, RoutedEventArgs e)
+        {
+            if (_zoomWindow != null) { _zoomWindow.SaveCapture(); return; }
+            if (_overlayManager == null) return;
+            var image = _overlayManager.RenderDrawing();
+            if (image == null)
+            {
+                MessageBox.Show(this, "저장할 판서 내용이 없습니다.", "Panseo", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+            CaptureFiles.Save(this, image, "판서 이미지 저장");
         }
 
         private void BtnPinScreenshot_Click(object sender, RoutedEventArgs e)

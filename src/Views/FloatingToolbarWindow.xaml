@@ -198,7 +198,7 @@
                         <Button x:Name="BtnMinimizeToCircle" Content="─" Style="{StaticResource SidebarButtonStyle}" 
                                 Padding="6,1" Height="24" Width="26" FontSize="12" Click="BtnMinimizeToCircle_Click" ToolTip="동그라미로 접기 (단축키: Ctrl+F1)"/>
                         <Button x:Name="BtnClose" Content="✕" Style="{StaticResource SidebarButtonStyle}" 
-                                Padding="6,1" Height="24" Width="26" FontSize="11" Margin="2,0,0,0" Click="BtnClose_Click" ToolTip="트레이로 숨기기 (완전 종료는 트레이 우클릭)"/>
+                                Padding="6,1" Height="24" Width="26" FontSize="11" Margin="2,0,0,0" Click="BtnClose_Click" ToolTip="프로그램 종료"/>
                     </StackPanel>
                 </Grid>
 
@@ -240,7 +240,7 @@
                                         <ColumnDefinition Width="Auto" />
                                     </Grid.ColumnDefinitions>
                                     <TextBlock Grid.Column="0" Text="크기" Foreground="{StaticResource TextSecondaryBrush}" FontSize="10" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                                    <Slider Grid.Column="1" x:Name="SliderPointerSize" Minimum="20" Maximum="160" Value="65" VerticalAlignment="Center" ValueChanged="SliderPointerSize_ValueChanged" ToolTip="Ctrl++ / Ctrl+− 로 포인터 크기 변경"/>
+                                    <Slider Grid.Column="1" x:Name="SliderPointerSize" Minimum="20" Maximum="160" Value="65" VerticalAlignment="Center" ValueChanged="SliderPointerSize_ValueChanged" ToolTip="Ctrl+휠 또는 Ctrl++ / Ctrl+− 로 포인터 크기 변경"/>
                                     <TextBlock Grid.Column="2" x:Name="TxtPointerSizeVal" Text="65" Foreground="#FFFFFF" FontSize="10" Width="24" TextAlignment="Right" VerticalAlignment="Center"/>
                                 </Grid>
 
@@ -304,7 +304,7 @@
                                         <ColumnDefinition Width="Auto" />
                                     </Grid.ColumnDefinitions>
                                     <TextBlock Grid.Column="0" Text="굵기" Foreground="{StaticResource TextSecondaryBrush}" FontSize="10" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                                    <Slider Grid.Column="1" x:Name="SliderStrokeThickness" Minimum="2" Maximum="24" Value="4" VerticalAlignment="Center" ValueChanged="SliderStrokeThickness_ValueChanged"/>
+                                    <Slider Grid.Column="1" x:Name="SliderStrokeThickness" Minimum="2" Maximum="24" Value="4" VerticalAlignment="Center" ValueChanged="SliderStrokeThickness_ValueChanged" ToolTip="판서 중 휠로 굵기 변경"/>
                                     <TextBlock Grid.Column="2" x:Name="TxtStrokeVal" Text="4" Foreground="#FFFFFF" FontSize="10" Width="24" TextAlignment="Right" VerticalAlignment="Center"/>
                                 </Grid>
 
@@ -343,6 +343,7 @@
                                     <Button x:Name="BtnSaveScreenshot" Style="{StaticResource SidebarButtonStyle}" Height="38" Padding="4,2" Click="BtnSaveScreenshot_Click" ToolTip="자동 영역을 조정해 편집 및 저장 (F1)">
                                         <TextBlock TextAlignment="Center" FontSize="10">📸 캡처 저장<LineBreak/><Run Text="F1" FontSize="9"/></TextBlock>
                                     </Button>
+                                    <Button x:Name="BtnSaveDrawing" Content="🖼 판서 PNG 저장" Style="{StaticResource SidebarButtonStyle}" Click="BtnSaveDrawing_Click" ToolTip="그린 내용만 투명 배경 PNG 파일로 저장"/>
                                 </UniformGrid>
                             </StackPanel>
                         </Border>

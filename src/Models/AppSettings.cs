@@ -1,7 +1,9 @@
 using System;
 using System.ComponentModel;
+using System.IO;
 using System.Runtime.CompilerServices;
 using System.Windows.Media;
+using System.Web.Script.Serialization;
 
 namespace Panseo.Models
 {
@@ -35,6 +37,85 @@ namespace Panseo.Models
         private bool _isTextEditing = false;
         private long _nextNumber = 1;
         private double _numberSize = 1.0;
+
+        public double? ToolbarLeft { get; set; }
+        public double? ToolbarTop { get; set; }
+        public bool MenuOpen { get; set; }
+
+        public sealed class SavedSettings
+        {
+            public int Schema { get; set; }
+            public int PointerShape { get; set; }
+            public double PointerSize { get; set; }
+            public string PointerColor { get; set; }
+            public bool ClickRipple { get; set; }
+            public int CurrentTool { get; set; }
+            public string DrawingColor { get; set; }
+            public double StrokeThickness { get; set; }
+            public double FontSize { get; set; }
+            public bool Blackboard { get; set; }
+            public double NumberSize { get; set; }
+            public double? ToolbarLeft { get; set; }
+            public double? ToolbarTop { get; set; }
+            public bool MenuOpen { get; set; }
+        }
+
+        private static string SettingsPath
+        {
+            get { return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Panseo", "settings.json"); }
+        }
+
+        public void Load()
+        {
+            Load(SettingsPath);
+        }
+
+        internal void Load(string path)
+        {
+            try
+            {
+                if (!File.Exists(path)) return;
+                var saved = new JavaScriptSerializer().Deserialize<SavedSettings>(File.ReadAllText(path));
+                if (saved == null || saved.Schema != 1) return;
+                if (Enum.IsDefined(typeof(PointerShape), saved.PointerShape)) PointerShape = (PointerShape)saved.PointerShape;
+                if (saved.PointerSize >= 20 && saved.PointerSize <= 160) PointerSize = saved.PointerSize;
+                if (!string.IsNullOrEmpty(saved.PointerColor)) PointerColor = (Color)ColorConverter.ConvertFromString(saved.PointerColor);
+                IsClickRippleEnabled = saved.ClickRipple;
+                if (Enum.IsDefined(typeof(DrawingTool), saved.CurrentTool)) CurrentTool = (DrawingTool)saved.CurrentTool;
+                if (!string.IsNullOrEmpty(saved.DrawingColor)) DrawingColor = (Color)ColorConverter.ConvertFromString(saved.DrawingColor);
+                if (saved.StrokeThickness >= 2 && saved.StrokeThickness <= 24) StrokeThickness = saved.StrokeThickness;
+                if (saved.FontSize >= 8 && saved.FontSize <= 100) FontSize = saved.FontSize;
+                IsBlackboardActive = saved.Blackboard;
+                if (saved.NumberSize >= 0.5 && saved.NumberSize <= 2) NumberSize = saved.NumberSize;
+                ToolbarLeft = saved.ToolbarLeft;
+                ToolbarTop = saved.ToolbarTop;
+                MenuOpen = saved.MenuOpen;
+            }
+            catch (Exception) { /* 손상된 설정은 기본값으로 실행한다. */ }
+        }
+
+        public void Save()
+        {
+            Save(SettingsPath);
+        }
+
+        internal void Save(string path)
+        {
+            var saved = new SavedSettings
+            {
+                Schema = 1, PointerShape = (int)PointerShape, PointerSize = PointerSize,
+                PointerColor = PointerColor.ToString(), ClickRipple = IsClickRippleEnabled,
+                CurrentTool = (int)CurrentTool, DrawingColor = DrawingColor.ToString(),
+                StrokeThickness = StrokeThickness, FontSize = FontSize,
+                Blackboard = IsBlackboardActive, NumberSize = NumberSize,
+                ToolbarLeft = ToolbarLeft, ToolbarTop = ToolbarTop, MenuOpen = MenuOpen
+            };
+            Directory.CreateDirectory(Path.GetDirectoryName(path));
+            var temporary = path + ".tmp";
+            File.WriteAllText(temporary, new JavaScriptSerializer().Serialize(saved));
+            if (File.Exists(path)) File.Replace(temporary, path, null);
+            else File.Move(temporary, path);
+        }
 
         public double NumberSize
         {

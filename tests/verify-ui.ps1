@@ -11,7 +11,7 @@ $card = $window.FindName('MenuCard')
 $card.Measure([Windows.Size]::new($window.Width, $window.Height))
 $card.Arrange([Windows.Rect]::new(0, 0, $window.Width, $window.Height))
 $card.UpdateLayout()
-foreach ($name in 'RbPointerCircle', 'RbToolMouse', 'RbToolEraser', 'BtnSaveScreenshot', 'BtnClearAll', 'BtnPinScreenshot', 'BtnScreenZoom', 'BtnManual', 'BtnUpdateCheck', 'RbToolNumber', 'BtnResetNumber', 'TxtStartNumber', 'BtnApplyStartNumber', 'BtnNumberSmaller', 'BtnNumberLarger', 'ChkBlackboard', 'BtnPointerColorPicker', 'BtnDrawingColorPicker') {
+foreach ($name in 'RbPointerCircle', 'RbToolMouse', 'RbToolEraser', 'BtnSaveScreenshot', 'BtnSaveDrawing', 'BtnClearAll', 'BtnPinScreenshot', 'BtnScreenZoom', 'BtnManual', 'BtnUpdateCheck', 'RbToolNumber', 'BtnResetNumber', 'TxtStartNumber', 'BtnApplyStartNumber', 'BtnNumberSmaller', 'BtnNumberLarger', 'ChkBlackboard', 'BtnPointerColorPicker', 'BtnDrawingColorPicker') {
     $control = $window.FindName($name)
     $rect = $control.TransformToAncestor($card).TransformBounds([Windows.Rect]::new(0, 0, $control.ActualWidth, $control.ActualHeight))
     if ($rect.Width -le 0 -or $rect.Height -le 0 -or $rect.Right -gt $card.ActualWidth + 1 -or $rect.Bottom -gt $card.ActualHeight + 1) { throw "Control clipped: $name ($rect)" }
@@ -24,6 +24,7 @@ if ($clear.Parent -ne $zoom.Parent -or $pin.Parent -ne $save.Parent -or $clear.P
     $clear.TransformToAncestor($card).Transform([Windows.Point]::new(0,0)).X -ge $zoom.TransformToAncestor($card).Transform([Windows.Point]::new(0,0)).X -or
     $pin.TransformToAncestor($card).Transform([Windows.Point]::new(0,0)).X -ge $save.TransformToAncestor($card).Transform([Windows.Point]::new(0,0)).X) { throw 'Capture/zoom button order failed' }
 if ($save.Content.Inlines.LastInline.Text -ne 'F1' -or $pin.Content.Inlines.LastInline.Text -ne 'F3') { throw 'Capture shortcut labels are stale' }
+if ($window.FindName('BtnClose').ToolTip -ne '프로그램 종료' -or $window.FindName('BtnSaveDrawing').ToolTip -notmatch 'PNG') { throw 'Exit or drawing save action missing' }
 $shortcutSource = Get-Content (Join-Path $root 'src\Views\FloatingToolbarWindow.xaml.cs') -Raw
 if ($shortcutSource -notmatch 'HOTKEY_ID_CAPTURE, 0x4000, VK_F1' -or $shortcutSource -notmatch 'HOTKEY_ID_PIN, 0x4000, VK_F3') { throw 'F1/F3 global hotkeys missing' }
 if ($shortcutSource -notmatch '_zoomHotkeyRegistered = Win32.RegisterHotKey' -or $shortcutSource -notmatch '_zoomNumpadHotkeyRegistered = Win32.RegisterHotKey' -or $shortcutSource -notmatch 'if \(nCode >= 0 && \(!_zoomHotkeyRegistered \|\| !_zoomNumpadHotkeyRegistered\)\)') { throw 'Zoom hotkey fallback missing' }
@@ -37,6 +38,26 @@ if ($pointerKey.Invoke($null,@([int]0xBB,[Windows.Input.ModifierKeys]::None)) -n
     $pointerKey.Invoke($null,@([int]0x6D,[Windows.Input.ModifierKeys]::Control)) -ne -5) { throw 'Pointer size keys intercept ordinary typing' }
 $thickness = [Panseo.Views.OverlayWindow].GetMethod('NextThickness',[Reflection.BindingFlags]'Static,NonPublic')
 if ($thickness.Invoke($null,@([double]4,[int]120)) -ne 5 -or $thickness.Invoke($null,@([double]2,[int]-120)) -ne 2 -or $thickness.Invoke($null,@([double]24,[int]120)) -ne 24) { throw 'Drawing wheel thickness bounds failed' }
+$settings = [Panseo.Models.AppSettings]::Instance
+$settingsPath = Join-Path ([IO.Path]::GetTempPath()) ('Panseo-settings-' + [guid]::NewGuid().ToString('N') + '.json')
+$saveSettings = $settings.GetType().GetMethod('Save',[Reflection.BindingFlags]'Instance,NonPublic',$null,[Type[]]@([string]),$null)
+$loadSettings = $settings.GetType().GetMethod('Load',[Reflection.BindingFlags]'Instance,NonPublic',$null,[Type[]]@([string]),$null)
+try {
+    $settings.PointerSize = 105; $settings.StrokeThickness = 13; $settings.NumberSize = 1.5
+    $settings.DrawingColor = [Windows.Media.Colors]::Blue; $settings.CurrentTool = [Panseo.Models.DrawingTool]::Pen
+    $settings.MenuOpen = $true; $settings.ToolbarLeft = 140; $settings.ToolbarTop = 180
+    [void]$saveSettings.Invoke($settings,[object[]]@([string]$settingsPath))
+    [void]$saveSettings.Invoke($settings,[object[]]@([string]$settingsPath))
+    $settings.PointerSize = 40; $settings.StrokeThickness = 4; $settings.NumberSize = 1
+    $settings.DrawingColor = [Windows.Media.Colors]::Red; $settings.CurrentTool = [Panseo.Models.DrawingTool]::None
+    [void]$loadSettings.Invoke($settings,[object[]]@([string]$settingsPath))
+    if ($settings.PointerSize -ne 105 -or $settings.StrokeThickness -ne 13 -or $settings.NumberSize -ne 1.5 -or
+        $settings.DrawingColor -ne [Windows.Media.Colors]::Blue -or $settings.CurrentTool -ne [Panseo.Models.DrawingTool]::Pen -or
+        -not $settings.MenuOpen -or $settings.ToolbarLeft -ne 140 -or $settings.ToolbarTop -ne 180) { throw 'Settings did not survive restart' }
+    $window.RestoreSettings()
+    if ($window.FindName('SliderPointerSize').Value -ne 105 -or $window.FindName('SliderStrokeThickness').Value -ne 13 -or
+        -not $window.FindName('RbToolPen').IsChecked) { throw 'Saved settings were not reflected in toolbar' }
+} finally { Remove-Item -LiteralPath $settingsPath -ErrorAction SilentlyContinue }
 foreach ($key in 0x31,0x61) {
     if (-not $zoomKeys.Invoke($null,@([int]0x100,[uint32]$key,$true,$false,$false))) { throw "Ctrl+1 key rejected: $key" }
     if ($zoomKeys.Invoke($null,@([int]0x100,[uint32]$key,$true,$true,$false))) { throw 'Ctrl+Shift+1 conflicts with zoom' }

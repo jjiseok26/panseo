@@ -520,13 +520,13 @@ namespace Panseo.Views
             return false;
         }
 
-        public static bool Save(Window owner, BitmapSource bitmap)
+        public static bool Save(Window owner, BitmapSource bitmap, string title = "캡처 저장")
         {
             try
             {
                 string folder = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyPictures), "PanseoScreenshots");
                 Directory.CreateDirectory(folder);
-                var dialog = new SaveFileDialog { Title = "캡처 저장", Filter = "PNG 이미지 (*.png)|*.png", DefaultExt = ".png",
+                var dialog = new SaveFileDialog { Title = title, Filter = "PNG 이미지 (*.png)|*.png", DefaultExt = ".png",
                     AddExtension = true, InitialDirectory = folder, FileName = "Panseo_" + DateTime.Now.ToString("yyyyMMdd_HHmmss_fff") + ".png" };
                 if (dialog.ShowDialog(owner) != true) return false;
                 WritePng(bitmap, dialog.FileName);

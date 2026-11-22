@@ -134,6 +134,20 @@ $path = Join-Path $PSScriptRoot 'capture-test-output.png'
 [void]$write.Invoke($null,@($result,[string]$path))
 $roundTrip = [Windows.Media.Imaging.BitmapImage]::new([Uri]::new($path))
 if ($roundTrip.PixelWidth -ne 320 -or $roundTrip.PixelHeight -ne 200) { throw 'PNG roundtrip failed' }
+$drawingCanvas = [Windows.Controls.Canvas]::new()
+$drawingCanvas.Width = 40; $drawingCanvas.Height = 30
+$drawingCanvas.Background = [Windows.Media.Brushes]::Transparent
+$drawing = [Windows.Shapes.Rectangle]::new()
+$drawing.Width = 10; $drawing.Height = 10; $drawing.Fill = [Windows.Media.Brushes]::Red
+[Windows.Controls.Canvas]::SetLeft($drawing,5); [Windows.Controls.Canvas]::SetTop($drawing,5)
+[void]$drawingCanvas.Children.Add($drawing)
+$drawingCanvas.Measure([Windows.Size]::new(40,30))
+$drawingCanvas.Arrange([Windows.Rect]::new(0,0,40,30))
+$renderDrawing = [Panseo.Views.OverlayWindow].GetMethod('RenderDrawingCanvas',[Reflection.BindingFlags]'Static,NonPublic')
+$drawingImage = $renderDrawing.Invoke($null,@($drawingCanvas,[int]40,[int]30))
+$drawingPixels = [byte[]]::new(40*30*4)
+$drawingImage.CopyPixels($drawingPixels,160,0)
+if ($drawingPixels[3] -ne 0 -or $drawingPixels[(7*40+7)*4+2] -lt 200 -or $drawingPixels[(7*40+7)*4+3] -lt 200) { throw 'Transparent drawing PNG render failed' }
 $pinned = [Panseo.Views.PinnedCaptureWindow]::new($result)
 if (-not $pinned.Topmost -or $pinned.Content.ContextMenu.Items.Count -ne 3 -or $pinned.Content.ContextMenu.Items[0].Header -ne '저장하기' -or $pinned.Content.ContextMenu.Items[1].Header -ne '복사하기' -or $pinned.Content.ContextMenu.Items[2].Header -ne '닫기') { throw 'Pinned menu failed' }
 $grip = $pinned.Content.Child.Children[1]

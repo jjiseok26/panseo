@@ -38,7 +38,12 @@ namespace Panseo.Views
             surface.RenderTransform = transforms;
             Children.Add(surface);
             SizeChanged += (s, e) => Reset();
-            PreviewMouseWheel += (s, e) => { ZoomAt(Math.Pow(1.2, e.Delta / 120.0), e.GetPosition(this)); e.Handled = true; };
+            PreviewMouseWheel += (s, e) =>
+            {
+                if ((Keyboard.Modifiers & ModifierKeys.Control) != 0) return;
+                ZoomAt(Math.Pow(1.2, e.Delta / 120.0), e.GetPosition(this));
+                e.Handled = true;
+            };
             PreviewMouseLeftButtonDown += (s, e) =>
             {
                 bool control = (Keyboard.Modifiers & ModifierKeys.Control) != 0;

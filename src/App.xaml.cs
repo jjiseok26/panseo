@@ -80,6 +80,8 @@ namespace Panseo
 
                 // 2. 플로팅 동그라미 / 메뉴 툴바 창 생성
                 _toolbarWindow = new FloatingToolbarWindow(_overlayManager);
+                Panseo.Models.AppSettings.Instance.Load();
+                _toolbarWindow.RestoreSettings();
                 ToolbarWindow = _toolbarWindow;
                 _toolbarWindow.Show();
 
@@ -232,6 +234,15 @@ namespace Panseo
 
         protected override void OnExit(ExitEventArgs e)
         {
+            if (_toolbarWindow != null)
+            {
+                var settings = Panseo.Models.AppSettings.Instance;
+                settings.ToolbarLeft = _toolbarWindow.Left;
+                settings.ToolbarTop = _toolbarWindow.Top;
+                settings.MenuOpen = _toolbarWindow.IsMenuOpen;
+                try { settings.Save(); }
+                catch (Exception ex) { System.Diagnostics.Debug.WriteLine("설정 저장 실패: " + ex.Message); }
+            }
             if (_trayIcon != null)
             {
                 _trayIcon.Visible = false;
