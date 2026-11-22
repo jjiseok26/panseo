@@ -933,15 +933,45 @@ namespace Panseo.Views
             else StartCapture(false);
         }
 
-        private void BtnSaveDrawing_Click(object sender, RoutedEventArgs e)
+        private async void BtnSaveDrawing_Click(object sender, RoutedEventArgs e)
         {
-            if (_zoomWindow != null) { _zoomWindow.SaveCapture(); return; }
-            if (_overlayManager == null) return;
-            var image = _overlayManager.RenderDrawing();
-            if (image == null)
+            if (_overlayManager == null || _isCapturing) return;
+            var drawing = _zoomWindow != null ? _zoomWindow.RenderDrawingOnly() : _overlayManager.RenderDrawing();
+            if (drawing == null)
             {
                 MessageBox.Show(this, "저장할 판서 내용이 없습니다.", "Panseo", MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
+            }
+            var choice = MessageBox.Show(this, "화면 배경을 함께 저장할까요?\n\n예: 현재 화면과 판서\n아니요: 판서만 투명 배경",
+                "판서 PNG 저장", MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
+            if (choice == MessageBoxResult.Cancel) return;
+            BitmapSource image = drawing;
+            if (choice == MessageBoxResult.Yes && _zoomWindow != null)
+                image = _zoomWindow.RenderCapture();
+            else if (choice == MessageBoxResult.Yes)
+            {
+                _isCapturing = true;
+                bool wasVisible = IsVisible, menuWasOpen = IsMenuOpen;
+                var pointer = AppSettings.Instance.PointerShape;
+                try
+                {
+                    AppSettings.Instance.PointerShape = PointerShape.None;
+                    Hide();
+                    await Task.Delay(350);
+                    image = ScreenCapture.Take(System.Windows.Forms.SystemInformation.VirtualScreen);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("화면 배경을 캡처할 수 없습니다: " + ex.Message, "Panseo", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+                finally
+                {
+                    AppSettings.Instance.PointerShape = pointer;
+                    if (wasVisible) Show();
+                    if (menuWasOpen) OpenMenu();
+                    _isCapturing = false;
+                }
             }
             CaptureFiles.Save(this, image, "판서 이미지 저장");
         }

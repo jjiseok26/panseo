@@ -71,15 +71,24 @@ if ($confirm.Margin.Left -le $selection.Right -or $confirm.Margin.Top -ne $selec
 [Panseo.Models.AppSettings]::Instance.StrokeThickness = 4
 $editor = [Panseo.Views.CaptureEditorWindow]::new($image)
 $toolPanel = $editor.Content.Children[0]
-$colors = @($toolPanel.Children | Where-Object { $_ -is [Windows.Controls.Button] -and $_.ToolTip -eq '빨강' })
-$stroke = @($toolPanel.Children | Where-Object { $_ -is [Windows.Controls.Slider] })
-$picker = @($toolPanel.Children | Where-Object { $_ -is [Windows.Controls.Button] -and $_.ToolTip -eq '색상 선택' })
+$groups = @($toolPanel.Children)
+if ($groups.Count -ne 3 -or $groups[0].Tag -ne '그리기' -or $groups[1].Tag -ne '색상 · 굵기' -or $groups[2].Tag -ne '편집 · 파일') { throw 'Capture toolbar groups missing' }
+$groupPanels = @($groups | ForEach-Object { $_.Child.Children[1] })
+$toolbarControls = @($groupPanels | ForEach-Object { $_.Children })
+$colors = @($toolbarControls | Where-Object { $_ -is [Windows.Controls.Button] -and $_.ToolTip -eq '빨강' })
+$stroke = @($toolbarControls | Where-Object { $_ -is [Windows.Controls.Slider] })
+$picker = @($toolbarControls | Where-Object { $_ -is [Windows.Controls.Button] -and $_.ToolTip -eq '색상 선택' })
 if ($colors.Count -ne 1 -or $stroke.Count -ne 1 -or $picker.Count -ne 1) { throw 'Capture color, picker, or stroke controls missing' }
-$iconControls = @($toolPanel.Children | Where-Object { $_ -is [Windows.Controls.Primitives.ButtonBase] })
+$iconControls = @($toolbarControls | Where-Object { $_ -is [Windows.Controls.Primitives.ButtonBase] })
 foreach ($control in $iconControls) {
-    if (-not $control.ToolTip -or ([string]$control.Content).Length -gt 2) { throw 'Capture editor icon or tooltip missing' }
+    if (-not $control.ToolTip -or ($control.Content -is [string] -and $control.Content.Length -gt 2)) { throw 'Capture editor icon or tooltip missing' }
 }
 if ($iconControls.Count -lt 16) { throw 'Capture editor toolbar actions missing' }
+$eraser = @($iconControls | Where-Object { $_.ToolTip -like '지우개*' })[0]
+$clear = @($iconControls | Where-Object { $_.ToolTip -eq '전체 지우기' })[0]
+$fileButton = @($iconControls | Where-Object { $_.ToolTip -like '파일로 저장하기*' })[0]
+if ($eraser.Content -isnot [Windows.Controls.Canvas] -or $clear.Content -ne '🗑' -or -not $fileButton) { throw 'Eraser, trash, or file save action missing' }
+if ($picker[0].Content -isnot [Windows.Shapes.Ellipse] -or $picker[0].Content.Fill -isnot [Windows.Media.LinearGradientBrush]) { throw 'Gradient palette icon missing' }
 $colorPicker = $assembly.GetType('Panseo.Helpers.ColorPicker')
 $fromHsv = $colorPicker.GetMethod('FromHsv',[Reflection.BindingFlags]'Static,NonPublic')
 foreach ($sample in @(@(0,255,0,0),@(120,0,255,0),@(240,0,0,255))) {
@@ -96,8 +105,8 @@ $wheel.RoutedEvent = [Windows.Input.Mouse]::PreviewMouseWheelEvent
 $canvas.RaiseEvent($wheel)
 if (-not $wheel.Handled -or $stroke[0].Value -ne 13) { throw 'Capture wheel stroke adjustment failed' }
 [Panseo.Models.AppSettings]::Instance.StrokeThickness = 4
-$toolButton = @($toolPanel.Children | Where-Object { $_ -is [Windows.Controls.RadioButton] })[0]
-$actionButton = @($toolPanel.Children | Where-Object { $_ -is [Windows.Controls.Button] })[0]
+$toolButton = @($toolbarControls | Where-Object { $_ -is [Windows.Controls.RadioButton] })[0]
+$actionButton = @($toolbarControls | Where-Object { $_ -is [Windows.Controls.Button] })[0]
 foreach ($control in @($toolButton,$actionButton)) {
     if (-not $control.Style -or -not @($control.Style.Setters | Where-Object { $_.Property -eq [Windows.Controls.Control]::TemplateProperty }).Count) { throw 'Capture editor Material button style missing' }
 }
@@ -120,6 +129,13 @@ $text = $editor.GetType().GetField('_textEditor', $flags).GetValue($editor)
 $text.Text = '캡처 테스트'
 $result = $editor.RenderCapture()
 if ($canvas.Children.Count -ne 5 -or $result.PixelWidth -ne 320 -or $result.PixelHeight -ne 200) { throw 'Annotation render failed' }
+$transparent = $editor.RenderDrawingOnly()
+$transparentPixels = [byte[]]::new(320*200*4)
+$transparent.CopyPixels($transparentPixels,1280,0)
+$opaqueDrawingPixels = 0
+for ($i=3; $i -lt $transparentPixels.Length; $i+=4) { if ($transparentPixels[$i] -gt 100) { $opaqueDrawingPixels++ } }
+if ($transparentPixels[3] -ne 0 -or $opaqueDrawingPixels -lt 200) { throw 'Editor transparent background save failed' }
+if ($editor.RenderCapture().PixelWidth -ne 320) { throw 'Editor background was not restored' }
 $editor.Undo()
 if ($canvas.Children.Count -ne 4) { throw 'Undo failed' }
 $editor.Redo()

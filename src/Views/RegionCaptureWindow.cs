@@ -48,7 +48,11 @@ namespace Panseo.Views
                 if (_selecting || _manualSelection || _surface.ActualWidth <= 0) return;
                 var pointer = System.Windows.Forms.Cursor.Position;
                 PositionInstruction(bounds, pointer);
-                var target = CaptureTargetDetector.Detect(pointer, bounds);
+                System.Drawing.Rectangle target;
+                var handle = new WindowInteropHelper(this).Handle;
+                Win32.SetClickThrough(handle, true);
+                try { target = CaptureTargetDetector.Detect(pointer, bounds); }
+                finally { Win32.SetClickThrough(handle, false); }
                 if (target == _lastTarget || target.Width < 24 || target.Height < 24) return;
                 _lastTarget = target;
                 _automaticSelection = true;

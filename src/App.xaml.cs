@@ -13,6 +13,9 @@ namespace Panseo
     public partial class App : Application
     {
         private static Mutex _mutex = null;
+        private EventWaitHandle _showSignal;
+        private RegisteredWaitHandle _showRegistration;
+        private volatile bool _showRequested;
         private OverlayWindowManager _overlayManager;
         private FloatingToolbarWindow _toolbarWindow;
         private NotifyIcon _trayIcon;
@@ -58,14 +61,21 @@ namespace Panseo
 
                 if (!createdNew)
                 {
-                    MessageBox.Show(
-                        "Panseo 프로그램이 이미 실행 중입니다!\n\n화면의 [플로팅 동그라미] 또는 우측 하단 [작업표시줄 트레이 아이콘]을 확인해주세요.", 
-                        "Panseo 알림", 
-                        MessageBoxButton.OK, 
-                        MessageBoxImage.Information);
+                    try
+                    {
+                        using (var signal = EventWaitHandle.OpenExisting(appName + "_Show")) signal.Set();
+                    }
+                    catch (WaitHandleCannotBeOpenedException) { }
                     Current.Shutdown();
                     return;
                 }
+
+                _showSignal = new EventWaitHandle(false, EventResetMode.AutoReset, appName + "_Show");
+                _showRegistration = ThreadPool.RegisterWaitForSingleObject(_showSignal, (state, timedOut) =>
+                {
+                    _showRequested = true;
+                    Dispatcher.BeginInvoke((Action)ShowToolbar);
+                }, null, Timeout.Infinite, false);
 
                 base.OnStartup(e);
 
@@ -84,6 +94,7 @@ namespace Panseo
                 _toolbarWindow.RestoreSettings();
                 ToolbarWindow = _toolbarWindow;
                 _toolbarWindow.Show();
+                if (_showRequested) ShowToolbar();
 
                 // 3. 작업표시줄 시스템 트레이 아이콘 생성
                 InitializeTrayIcon();
@@ -97,6 +108,16 @@ namespace Panseo
             {
                 MessageBox.Show("초기화 중 오류가 발생했습니다: " + ex.Message, "오류", MessageBoxButton.OK, MessageBoxImage.Error);
             }
+        }
+
+        private void ShowToolbar()
+        {
+            if (_toolbarWindow == null) return;
+            _showRequested = false;
+            if (!_toolbarWindow.IsVisible) _toolbarWindow.Show();
+            _toolbarWindow.WindowState = WindowState.Normal;
+            _toolbarWindow.OpenMenu();
+            _toolbarWindow.Activate();
         }
 
         public async void CheckForUpdates(bool manual)
@@ -234,6 +255,8 @@ namespace Panseo
 
         protected override void OnExit(ExitEventArgs e)
         {
+            if (_showRegistration != null) { _showRegistration.Unregister(null); _showRegistration = null; }
+            if (_showSignal != null) { _showSignal.Dispose(); _showSignal = null; }
             if (_toolbarWindow != null)
             {
                 var settings = Panseo.Models.AppSettings.Instance;

@@ -59,18 +59,19 @@ namespace Panseo.Views
             root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
             root.RowDefinitions.Add(new RowDefinition());
             root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-            var tools = new WrapPanel { Margin = new Thickness(8), Background = new SolidColorBrush(Color.FromRgb(48, 49, 52)) };
-            AddTool(tools, "✥", "이동 (Ctrl+M)", DrawingTool.None);
-            AddTool(tools, "✎", "펜 (Ctrl+P)", DrawingTool.Pen);
-            AddTool(tools, "▰", "형광펜 (Ctrl+H)", DrawingTool.Highlighter);
-            AddTool(tools, "╱", "직선 (Ctrl+L)", DrawingTool.Line);
-            AddTool(tools, "⌫", "지우개 (Ctrl+E)", DrawingTool.Eraser);
-            AddTool(tools, "□", "사각형 (Ctrl+R)", DrawingTool.Rectangle);
-            AddTool(tools, "○", "원 (Ctrl+O)", DrawingTool.Ellipse);
-            AddTool(tools, "➜", "화살표 (Ctrl+A)", DrawingTool.Arrow);
-            AddTool(tools, "T", "글자 (Ctrl+T)", DrawingTool.Text);
-            AddTool(tools, "①", "번호 (Ctrl+N)", DrawingTool.Number);
-            AddButton(tools, "↺", "번호 1부터 시작", ResetNumbering);
+            var tools = new StackPanel { Margin = new Thickness(8), Background = new SolidColorBrush(Color.FromRgb(48, 49, 52)) };
+            var drawingTools = AddGroup(tools, "그리기");
+            AddTool(drawingTools, "✥", "이동 (Ctrl+M)", DrawingTool.None);
+            AddTool(drawingTools, "✎", "펜 (Ctrl+P)", DrawingTool.Pen);
+            AddTool(drawingTools, "▰", "형광펜 (Ctrl+H)", DrawingTool.Highlighter);
+            AddTool(drawingTools, "╱", "직선 (Ctrl+L)", DrawingTool.Line);
+            AddTool(drawingTools, CreateEraserIcon(), "지우개 (Ctrl+E)", DrawingTool.Eraser);
+            AddTool(drawingTools, "□", "사각형 (Ctrl+R)", DrawingTool.Rectangle);
+            AddTool(drawingTools, "○", "원 (Ctrl+O)", DrawingTool.Ellipse);
+            AddTool(drawingTools, "➜", "화살표 (Ctrl+A)", DrawingTool.Arrow);
+            AddTool(drawingTools, "T", "글자 (Ctrl+T)", DrawingTool.Text);
+            AddTool(drawingTools, "①", "번호 (Ctrl+N)", DrawingTool.Number);
+            AddButton(drawingTools, "↺", "번호 1부터 시작", ResetNumbering);
             var numberControls = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(3) };
             numberControls.Children.Add(new TextBlock { Text = "№", ToolTip = "시작 번호", Foreground = Brushes.White, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0,0,5,0) });
             _startNumberInput = new TextBox { Text = "1", Width = 55, Padding = new Thickness(4), VerticalContentAlignment = VerticalAlignment.Center,
@@ -81,20 +82,17 @@ namespace Panseo.Views
             AddButton(numberControls, "✓", "시작 번호 적용 (Enter)", ApplyStartNumber);
             AddButton(numberControls, "−", "번호 크기 줄이기", () => ChangeNumberSize(-0.25));
             AddButton(numberControls, "+", "번호 크기 키우기", () => ChangeNumberSize(0.25));
-            tools.Children.Add(numberControls);
-            AddButton(tools, "↶", "되돌리기 (Ctrl+Z)", Undo);
-            AddButton(tools, "↷", "다시 실행 (Ctrl+Y)", Redo);
-            AddButton(tools, "▣", "캡처 저장 (F1)", SaveCapture);
-            AddButton(tools, "⚑", "화면 고정 (F3)", PinCapture);
-            AddButton(tools, "⌧", "전체 지우기", ClearAll);
-            AddColor(tools, Colors.Red, "빨강");
-            AddColor(tools, Colors.Yellow, "노랑");
-            AddColor(tools, Colors.LimeGreen, "초록");
-            AddColor(tools, Colors.DeepSkyBlue, "파랑");
-            AddColor(tools, Colors.White, "흰색");
-            AddColor(tools, Colors.Black, "검정");
-            AddButton(tools, "◉", "색상 선택", ChooseDrawingColor);
-            tools.Children.Add(new TextBlock { Text = "굵기", ToolTip = "선 굵기 · 휠로도 조절", Foreground = Foreground,
+            drawingTools.Children.Add(numberControls);
+
+            var colorTools = AddGroup(tools, "색상 · 굵기");
+            AddColor(colorTools, Colors.Red, "빨강");
+            AddColor(colorTools, Colors.Yellow, "노랑");
+            AddColor(colorTools, Colors.LimeGreen, "초록");
+            AddColor(colorTools, Colors.DeepSkyBlue, "파랑");
+            AddColor(colorTools, Colors.White, "흰색");
+            AddColor(colorTools, Colors.Black, "검정");
+            AddButton(colorTools, CreatePaletteIcon(), "색상 선택", ChooseDrawingColor);
+            colorTools.Children.Add(new TextBlock { Text = "굵기", ToolTip = "선 굵기 · 휠로도 조절", Foreground = Foreground,
                 VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(6, 0, 3, 0) });
             _strokeSlider = new Slider { Minimum = 2, Maximum = 24, Value = AppSettings.Instance.StrokeThickness,
                 Width = 105, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(3) };
@@ -105,12 +103,18 @@ namespace Panseo.Views
                 AppSettings.Instance.StrokeThickness = e.NewValue;
                 _strokeValue.Text = ((int)e.NewValue).ToString();
             };
-            tools.Children.Add(_strokeSlider);
-            tools.Children.Add(_strokeValue);
+            colorTools.Children.Add(_strokeSlider);
+            colorTools.Children.Add(_strokeValue);
+            var fileTools = AddGroup(tools, "편집 · 파일");
+            AddButton(fileTools, "↶", "되돌리기 (Ctrl+Z)", Undo);
+            AddButton(fileTools, "↷", "다시 실행 (Ctrl+Y)", Redo);
+            AddButton(fileTools, "🗑", "전체 지우기", ClearAll);
+            AddButton(fileTools, "💾", "파일로 저장하기 (F1)", SaveCapture);
+            AddButton(fileTools, "⚑", "화면 고정 (F3)", PinCapture);
             if (screenZoom)
             {
-                AddButton(tools, "⊙", "확대/축소 초기화 (100%)", () => ZoomView.Reset());
-                AddButton(tools, "×", "닫기 (Esc)", Close);
+                AddButton(fileTools, "⊙", "확대/축소 초기화 (100%)", () => ZoomView.Reset());
+                AddButton(fileTools, "×", "닫기 (Esc)", Close);
             }
             root.Children.Add(tools);
             _canvas = new Canvas
@@ -153,7 +157,41 @@ namespace Panseo.Views
             }
         }
 
-        private void AddTool(Panel panel, string icon, string description, DrawingTool tool)
+        private static WrapPanel AddGroup(Panel toolbar, string title)
+        {
+            var row = new DockPanel { LastChildFill = true };
+            row.Children.Add(new TextBlock { Text = title, Width = 72, VerticalAlignment = VerticalAlignment.Center,
+                Foreground = Brushes.LightGray, FontSize = 11, Margin = new Thickness(4, 0, 0, 0) });
+            var buttons = new WrapPanel { VerticalAlignment = VerticalAlignment.Center };
+            row.Children.Add(buttons);
+            toolbar.Children.Add(new Border { Child = row, Tag = title, CornerRadius = new CornerRadius(8),
+                Background = new SolidColorBrush(Color.FromRgb(60, 64, 67)), Margin = new Thickness(0, 0, 0, 4),
+                Padding = new Thickness(2) });
+            return buttons;
+        }
+
+        private static UIElement CreateEraserIcon()
+        {
+            var icon = new Canvas { Width = 22, Height = 20 };
+            icon.Children.Add(new System.Windows.Shapes.Path { Data = Geometry.Parse("M 8,2 L 20,10 L 14,18 L 2,10 Z"),
+                Fill = new SolidColorBrush(Color.FromRgb(244, 183, 192)), Stroke = Brushes.White, StrokeThickness = 1.5 });
+            icon.Children.Add(new System.Windows.Shapes.Path { Data = Geometry.Parse("M 3,10 L 14,18"),
+                Stroke = Brushes.White, StrokeThickness = 1.5 });
+            return icon;
+        }
+
+        private static UIElement CreatePaletteIcon()
+        {
+            var gradient = new LinearGradientBrush { StartPoint = new Point(0, 0), EndPoint = new Point(1, 1),
+                GradientStops = new GradientStopCollection {
+                    new GradientStop(Colors.Red, 0), new GradientStop(Colors.Yellow, 0.25),
+                    new GradientStop(Colors.LimeGreen, 0.5), new GradientStop(Colors.DeepSkyBlue, 0.75),
+                    new GradientStop(Colors.MediumPurple, 1) } };
+            return new Ellipse { Width = 20, Height = 20, Fill = gradient,
+                Stroke = Brushes.White, StrokeThickness = 1 };
+        }
+
+        private void AddTool(Panel panel, object icon, string description, DrawingTool tool)
         {
             var button = new RadioButton { Content = icon, ToolTip = description, GroupName = "CaptureTools", Margin = new Thickness(2),
                 Width = 34, Height = 34, FontSize = 17, IsChecked = tool == _tool,
@@ -163,7 +201,7 @@ namespace Panseo.Views
             panel.Children.Add(button);
         }
 
-        private static void AddButton(Panel panel, string icon, string description, Action action)
+        private static void AddButton(Panel panel, object icon, string description, Action action)
         {
             var button = new Button { Content = icon, ToolTip = description, Width = 34, Height = 34,
                 FontSize = 17, Margin = new Thickness(2),
@@ -491,6 +529,20 @@ namespace Panseo.Views
                 return bitmap;
             }
             finally { _canvas.RenderTransform = transform; }
+        }
+
+        public BitmapSource RenderDrawingOnly()
+        {
+            CommitText(true);
+            FinishDrawing();
+            if (_canvas.Children.Count == 0) return null;
+            var background = _canvas.Background;
+            try
+            {
+                _canvas.Background = Brushes.Transparent;
+                return RenderCapture();
+            }
+            finally { _canvas.Background = background; }
         }
 
         public void SaveCapture()

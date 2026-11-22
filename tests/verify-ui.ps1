@@ -39,7 +39,7 @@ if ($pointerKey.Invoke($null,@([int]0xBB,[Windows.Input.ModifierKeys]::None)) -n
 $thickness = [Panseo.Views.OverlayWindow].GetMethod('NextThickness',[Reflection.BindingFlags]'Static,NonPublic')
 if ($thickness.Invoke($null,@([double]4,[int]120)) -ne 5 -or $thickness.Invoke($null,@([double]2,[int]-120)) -ne 2 -or $thickness.Invoke($null,@([double]24,[int]120)) -ne 24) { throw 'Drawing wheel thickness bounds failed' }
 $settings = [Panseo.Models.AppSettings]::Instance
-$settingsPath = Join-Path ([IO.Path]::GetTempPath()) ('Panseo-settings-' + [guid]::NewGuid().ToString('N') + '.json')
+$settingsPath = Join-Path $root ('tests\Panseo-settings-' + [guid]::NewGuid().ToString('N') + '.json')
 $saveSettings = $settings.GetType().GetMethod('Save',[Reflection.BindingFlags]'Instance,NonPublic',$null,[Type[]]@([string]),$null)
 $loadSettings = $settings.GetType().GetMethod('Load',[Reflection.BindingFlags]'Instance,NonPublic',$null,[Type[]]@([string]),$null)
 try {

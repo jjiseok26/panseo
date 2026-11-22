@@ -27,11 +27,38 @@ namespace Panseo.Helpers
                 var region = Rectangle.Intersect(desktop, Rectangle.FromLTRB(rect.Left, rect.Top, rect.Right, rect.Bottom));
                 if (region.Contains(cursor) && region.Width >= 24 && region.Height >= 24)
                 {
+                    var pointed = ElementFromPoint(cursor, region, ownProcess);
+                    if (!pointed.IsEmpty) return pointed;
                     var element = ElementAt(window, cursor, desktop);
                     return element.IsEmpty ? region : element;
                 }
             }
             return Rectangle.Intersect(desktop, Screen.FromPoint(cursor).Bounds);
+        }
+
+        private static Rectangle ElementFromPoint(Point cursor, Rectangle window, uint ownProcess)
+        {
+            try
+            {
+                var element = AutomationElement.FromPoint(new System.Windows.Point(cursor.X, cursor.Y));
+                if (element == null || element.Current.ProcessId == ownProcess) return Rectangle.Empty;
+                var box = element.Current.BoundingRectangle;
+                if (box.IsEmpty || double.IsNaN(box.Left) || double.IsNaN(box.Top) ||
+                    double.IsNaN(box.Right) || double.IsNaN(box.Bottom) ||
+                    double.IsInfinity(box.Left) || double.IsInfinity(box.Top) ||
+                    double.IsInfinity(box.Right) || double.IsInfinity(box.Bottom) ||
+                    box.Left < int.MinValue || box.Top < int.MinValue ||
+                    box.Right > int.MaxValue || box.Bottom > int.MaxValue) return Rectangle.Empty;
+                var region = Rectangle.Intersect(window, Rectangle.FromLTRB((int)Math.Floor(box.Left),
+                    (int)Math.Floor(box.Top), (int)Math.Ceiling(box.Right), (int)Math.Ceiling(box.Bottom)));
+                return region.Contains(cursor) && region.Width >= 8 && region.Height >= 8 ? region : Rectangle.Empty;
+            }
+            catch (ElementNotAvailableException) { }
+            catch (COMException) { }
+            catch (InvalidOperationException) { }
+            catch (Win32Exception) { }
+            catch (UnauthorizedAccessException) { }
+            return Rectangle.Empty;
         }
 
         private static Rectangle ElementAt(IntPtr window, Point cursor, Rectangle desktop)
