@@ -24,6 +24,8 @@ namespace Panseo.Views
         private bool _isCapturing;
         private ScreenZoomWindow _zoomWindow;
         private ManualWindow _manualWindow;
+        private BitmapSource _lastCapture;
+        private System.Drawing.Rectangle _lastCaptureBounds;
 
         public bool IsMenuOpen
         {
@@ -187,7 +189,8 @@ namespace Panseo.Views
                         if (id == HOTKEY_ID_CAPTURE) editor.SaveCapture();
                         else editor.PinCapture();
                     }
-                    else StartCapture(id == HOTKEY_ID_PIN);
+                    else if (id == HOTKEY_ID_CAPTURE) StartCapture(false);
+                    else PinClipboardOrCapture();
                     handled = true;
                 }
                 else if (id == HOTKEY_ID_MOUSE)
@@ -268,7 +271,7 @@ namespace Panseo.Views
                     ((!_captureHotkeyRegistered && vk == VK_F1) || (!_pinHotkeyRegistered && vk == VK_F3)))
                 {
                     bool pin = vk == VK_F3;
-                    Dispatcher.BeginInvoke((Action)(() => StartCapture(pin)));
+                    Dispatcher.BeginInvoke((Action)(() => { if (pin) PinClipboardOrCapture(); else StartCapture(false); }));
                     return new IntPtr(1);
                 }
 
@@ -982,6 +985,20 @@ namespace Panseo.Views
             else StartCapture(true);
         }
 
+        private void PinClipboardOrCapture()
+        {
+            if (_isCapturing) return;
+            BitmapSource image = null;
+            try { if (Clipboard.ContainsImage()) image = Clipboard.GetImage(); }
+            catch (System.Runtime.InteropServices.ExternalException) { }
+            if (image == null) image = _lastCapture;
+            if (image == null) { StartCapture(true); return; }
+            var location = _lastCapture != null && image.PixelWidth == _lastCapture.PixelWidth &&
+                image.PixelHeight == _lastCapture.PixelHeight
+                ? (System.Drawing.Rectangle?)_lastCaptureBounds : null;
+            new PinnedCaptureWindow(image, location).Show();
+        }
+
         public void ShowManual()
         {
             if (_manualWindow == null)
@@ -1111,12 +1128,14 @@ namespace Panseo.Views
                 var selector = new RegionCaptureWindow(snapshot, bounds, suggested, cursor);
                 if (selector.ShowDialog() == true)
                 {
-                    if (pin) new PinnedCaptureWindow(selector.Selection).Show();
+                    _lastCapture = selector.Selection;
+                    _lastCaptureBounds = selector.SelectionBounds;
+                    if (pin) new PinnedCaptureWindow(selector.Selection, selector.SelectionBounds).Show();
                     else
                     {
                         if (!CaptureFiles.Copy(selector.Selection))
                             MessageBox.Show("캡처 이미지를 클립보드에 복사할 수 없습니다.", "Panseo", MessageBoxButton.OK, MessageBoxImage.Error);
-                        new CaptureEditorWindow(selector.Selection).Show();
+                        new CaptureEditorWindow(selector.Selection) { CaptureBounds = selector.SelectionBounds }.Show();
                     }
                 }
             }

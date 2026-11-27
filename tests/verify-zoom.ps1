@@ -30,6 +30,11 @@ if ($view.ZoomRatio -ne 1) { throw 'Reset failed' }
 $pin = [Panseo.Views.PinnedCaptureWindow]::new($image)
 if ($pin.Content.Child.Children[0] -isnot [Panseo.Views.ZoomImageView] -or $pin.Content.Child.Children[1] -isnot [Windows.Controls.Primitives.Thumb]) { throw 'Pinned capture lacks zoom or resize handle' }
 if ($pin.Content.ContextMenu.Items.Count -ne 3) { throw 'Pinned capture menu changed' }
+$oldPinWidth = $pin.Width
+$pinWheel = [Windows.Input.MouseWheelEventArgs]::new([Windows.Input.Mouse]::PrimaryDevice,0,120)
+$pinWheel.RoutedEvent = [Windows.Input.Mouse]::PreviewMouseWheelEvent
+$pin.Content.RaiseEvent($pinWheel)
+if (-not $pinWheel.Handled -or $pin.Width -le $oldPinWidth -or [Math]::Abs(($pin.Width-2)/($pin.Height-2)-1.6) -gt 0.01) { throw 'Pinned image wheel scaling failed' }
 $redPixels = [byte[]]::new(320*200*4)
 for ($i=0; $i -lt $redPixels.Length; $i+=4) { $redPixels[$i+2]=255; $redPixels[$i+3]=255 }
 $redImage = [Windows.Media.Imaging.BitmapSource]::Create(320,200,96,96,[Windows.Media.PixelFormats]::Bgra32,$null,$redPixels,1280)

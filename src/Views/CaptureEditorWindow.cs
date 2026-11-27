@@ -41,6 +41,7 @@ namespace Panseo.Views
         private readonly TextBox _startNumberInput;
         private readonly TextBlock _strokeValue;
         private readonly Slider _strokeSlider;
+        public System.Drawing.Rectangle? CaptureBounds { get; set; }
 
         public CaptureEditorWindow(BitmapSource image) : this(image, false) { }
 
@@ -552,7 +553,7 @@ namespace Panseo.Views
 
         public void PinCapture()
         {
-            new PinnedCaptureWindow(RenderCapture()).Show();
+            new PinnedCaptureWindow(RenderCapture(), CaptureBounds).Show();
             _status.Text = "화면에 고정했습니다. 고정 화면 우클릭 → 저장하기 / 복사하기 / 닫기";
         }
     }
@@ -604,7 +605,9 @@ namespace Panseo.Views
     public sealed class PinnedCaptureWindow : Window
     {
         private readonly BitmapSource _image;
-        public PinnedCaptureWindow(BitmapSource image)
+        public PinnedCaptureWindow(BitmapSource image) : this(image, null) { }
+
+        public PinnedCaptureWindow(BitmapSource image, System.Drawing.Rectangle? captureBounds)
         {
             _image = image;
             Title = "Panseo 고정 캡처";
@@ -639,13 +642,13 @@ namespace Panseo.Views
                 double ratio = (double)image.PixelWidth / image.PixelHeight;
                 double delta = Math.Abs(e.HorizontalChange) >= Math.Abs(e.VerticalChange)
                     ? e.HorizontalChange : e.VerticalChange * ratio;
-                Width = Math.Max(MinWidth, Width + delta);
-                Height = Math.Max(MinHeight, (Width - 2) / ratio + 2);
+                Width = Math.Max(Math.Max(MinWidth, (MinHeight - 2) * ratio + 2), Width + delta);
+                Height = (Width - 2) / ratio + 2;
             };
             content.Children.Add(grip);
             var border = new Border { BorderBrush = Brushes.DeepSkyBlue, BorderThickness = new Thickness(1),
                 Child = content, Cursor = Cursors.SizeAll,
-                ToolTip = "오른쪽 아래 조절점: 창 크기 · 휠: 확대/축소 · Ctrl+드래그: 이미지 이동 · 드래그: 창 이동 · 우클릭: 저장/복사/닫기" };
+                ToolTip = "휠: 고정 이미지 크기 · Ctrl+휠: 투명도 · 오른쪽 아래: 크기 조절 · Ctrl+드래그: 이미지 이동 · 우클릭: 저장/복사/닫기" };
             var menu = new ContextMenu();
             var save = new MenuItem { Header = "저장하기" };
             save.Click += (s, e) => CaptureFiles.Save(this, _image);
@@ -657,9 +660,43 @@ namespace Panseo.Views
             menu.Items.Add(copy);
             menu.Items.Add(close);
             border.ContextMenu = menu;
+            border.PreviewMouseWheel += (s, e) =>
+            {
+                if ((Keyboard.Modifiers & ModifierKeys.Control) != 0)
+                    Opacity = Math.Max(0.2, Math.Min(1, Opacity + Math.Sign(e.Delta) * 0.1));
+                else
+                {
+                    double oldWidth = Width, oldHeight = Height;
+                    double minimumWidth = Math.Max(MinWidth, (MinHeight - 2) * image.PixelWidth / image.PixelHeight + 2);
+                    double width = Math.Max(minimumWidth, Math.Min(image.PixelWidth * 4 + 2, Width * Math.Pow(1.2, e.Delta / 120.0)));
+                    double height = (width - 2) * image.PixelHeight / image.PixelWidth + 2;
+                    var anchor = e.GetPosition(this);
+                    Left += anchor.X * (1 - width / oldWidth);
+                    Top += anchor.Y * (1 - height / oldHeight);
+                    Width = width;
+                    Height = height;
+                    view.Reset();
+                }
+                e.Handled = true;
+            };
             border.MouseLeftButtonDown += (s, e) => { if (!grip.IsMouseOver) Win32.TryDragMove(this); };
             Content = border;
-            Loaded += (s, e) => CopyImage();
+            Loaded += (s, e) =>
+            {
+                if (captureBounds.HasValue && !captureBounds.Value.IsEmpty)
+                {
+                    var bounds = captureBounds.Value;
+                    var deviceScale = PresentationSource.FromVisual(this).CompositionTarget.TransformToDevice;
+                    int width = (int)Math.Round(Width * deviceScale.M11);
+                    int height = (int)Math.Round(Height * deviceScale.M22);
+                    var screen = System.Windows.Forms.Screen.FromRectangle(bounds).WorkingArea;
+                    int x = Math.Max(screen.Left, Math.Min(screen.Right - width, bounds.Left));
+                    int y = Math.Max(screen.Top, Math.Min(screen.Bottom - height, bounds.Top));
+                    Win32.SetWindowPos(new System.Windows.Interop.WindowInteropHelper(this).Handle,
+                        Win32.HWND_TOPMOST, x, y, width, height, Win32.SWP_SHOWWINDOW);
+                }
+                CopyImage();
+            };
             KeyDown += (s, e) => { if (e.Key == Key.D0 || e.Key == Key.NumPad0) view.Reset(); };
         }
 

@@ -13,6 +13,16 @@ namespace Panseo.Helpers
     {
         internal static Rectangle Detect(Point cursor, Rectangle desktop)
         {
+            return Find(cursor, desktop, true);
+        }
+
+        internal static Rectangle DetectWindow(Point cursor, Rectangle desktop)
+        {
+            return Find(cursor, desktop, false);
+        }
+
+        private static Rectangle Find(Point cursor, Rectangle desktop, bool preferElement)
+        {
             var point = new Win32.POINT { X = cursor.X, Y = cursor.Y };
             IntPtr window = Win32.GetAncestor(Win32.WindowFromPoint(point), 2); // GA_ROOT
             uint ownProcess = (uint)Process.GetCurrentProcess().Id;
@@ -27,10 +37,14 @@ namespace Panseo.Helpers
                 var region = Rectangle.Intersect(desktop, Rectangle.FromLTRB(rect.Left, rect.Top, rect.Right, rect.Bottom));
                 if (region.Contains(cursor) && region.Width >= 24 && region.Height >= 24)
                 {
-                    var pointed = ElementFromPoint(cursor, region, ownProcess);
-                    if (!pointed.IsEmpty) return pointed;
-                    var element = ElementAt(window, cursor, desktop);
-                    return element.IsEmpty ? region : element;
+                    if (preferElement)
+                    {
+                        var pointed = ElementFromPoint(cursor, region, ownProcess);
+                        if (!pointed.IsEmpty) return pointed;
+                        var element = ElementAt(window, cursor, desktop);
+                        if (!element.IsEmpty) return element;
+                    }
+                    return region;
                 }
             }
             return Rectangle.Intersect(desktop, Screen.FromPoint(cursor).Bounds);

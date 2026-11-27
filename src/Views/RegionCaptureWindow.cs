@@ -15,6 +15,7 @@ namespace Panseo.Views
     public sealed class RegionCaptureWindow : Window
     {
         private readonly Grid _surface;
+        private readonly System.Drawing.Rectangle _bounds;
         private readonly Path _shade;
         private readonly Rectangle _outline;
         private readonly Rectangle[] _handles = new Rectangle[8];
@@ -31,8 +32,10 @@ namespace Panseo.Views
         private bool _automaticSelection;
         private bool _initialSelectionApplied;
         private bool _manualSelection;
+        private bool _preferElement = true;
         private System.Drawing.Rectangle _lastTarget;
         public BitmapSource Selection { get; private set; }
+        public System.Drawing.Rectangle SelectionBounds { get; private set; }
 
         public RegionCaptureWindow(BitmapSource snapshot, System.Drawing.Rectangle bounds)
             : this(snapshot, bounds, System.Drawing.Rectangle.Empty, System.Windows.Forms.Cursor.Position) { }
@@ -40,6 +43,7 @@ namespace Panseo.Views
         public RegionCaptureWindow(BitmapSource snapshot, System.Drawing.Rectangle bounds,
             System.Drawing.Rectangle suggested, System.Drawing.Point cursor)
         {
+            _bounds = bounds;
             _lastTarget = suggested;
             _hoverTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(90) };
             _hoverTimer.Tick += (s, e) =>
@@ -51,7 +55,8 @@ namespace Panseo.Views
                 System.Drawing.Rectangle target;
                 var handle = new WindowInteropHelper(this).Handle;
                 Win32.SetClickThrough(handle, true);
-                try { target = CaptureTargetDetector.Detect(pointer, bounds); }
+                try { target = _preferElement ? CaptureTargetDetector.Detect(pointer, bounds)
+                    : CaptureTargetDetector.DetectWindow(pointer, bounds); }
                 finally { Win32.SetClickThrough(handle, false); }
                 if (target == _lastTarget || target.Width < 24 || target.Height < 24) return;
                 _lastTarget = target;
@@ -81,7 +86,7 @@ namespace Panseo.Views
             _surface.Children.Add(overlay);
             _instruction = new TextBlock
             {
-                Text = "포인터 이동: 자동 선택 · 드래그: 직접 선택 · Enter: 확정 · Esc: 취소",
+                Text = "포인터 이동: 자동 선택 · Tab: 요소/창 전환 · 드래그: 직접 선택 · Enter: 확정 · Esc: 취소",
                 Foreground = Brushes.White, Background = new SolidColorBrush(Color.FromArgb(220, 24, 24, 38)),
                 Padding = new Thickness(16, 10, 16, 10), FontSize = 16,
                 TextWrapping = TextWrapping.Wrap, HorizontalAlignment = HorizontalAlignment.Left,
@@ -143,6 +148,15 @@ namespace Panseo.Views
             {
                 if (e.Key == Key.Escape) Close();
                 else if (e.Key == Key.Enter) { Confirm(snapshot); e.Handled = true; }
+                else if (e.Key == Key.Tab)
+                {
+                    _preferElement = !_preferElement;
+                    _manualSelection = false;
+                    _lastTarget = System.Drawing.Rectangle.Empty;
+                    _hoverTimer.Stop();
+                    _hoverTimer.Start();
+                    e.Handled = true;
+                }
             };
         }
 
@@ -153,6 +167,15 @@ namespace Panseo.Views
             return new Rect((region.Left - desktop.Left) * viewport.Width / desktop.Width,
                 (region.Top - desktop.Top) * viewport.Height / desktop.Height,
                 region.Width * viewport.Width / desktop.Width, region.Height * viewport.Height / desktop.Height);
+        }
+
+        internal static System.Drawing.Rectangle MapToDesktop(Rect selection, System.Drawing.Rectangle desktop, Size viewport)
+        {
+            int left = desktop.Left + (int)Math.Floor(selection.Left * desktop.Width / viewport.Width);
+            int top = desktop.Top + (int)Math.Floor(selection.Top * desktop.Height / viewport.Height);
+            int right = desktop.Left + (int)Math.Ceiling(selection.Right * desktop.Width / viewport.Width);
+            int bottom = desktop.Top + (int)Math.Ceiling(selection.Bottom * desktop.Height / viewport.Height);
+            return System.Drawing.Rectangle.Intersect(desktop, System.Drawing.Rectangle.FromLTRB(left, top, right, bottom));
         }
 
         private void BeginSelectionAt(Point point)
@@ -187,6 +210,7 @@ namespace Panseo.Views
         {
             if (_selection.Width < 3 || _selection.Height < 3) return;
             Selection = Crop(snapshot, _selection, _surface.RenderSize);
+            SelectionBounds = MapToDesktop(_selection, _bounds, _surface.RenderSize);
             DialogResult = true;
         }
 

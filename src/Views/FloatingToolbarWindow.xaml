@@ -337,8 +337,8 @@
                                     <Button x:Name="BtnScreenZoom" Style="{StaticResource SidebarButtonStyle}" Height="38" Padding="4,2" Click="BtnScreenZoom_Click" ToolTip="현재 화면을 휠로 확대/축소">
                                         <TextBlock TextAlignment="Center" FontSize="10">🔍 확대/축소<LineBreak/><Run Text="Ctrl+1" FontSize="9"/></TextBlock>
                                     </Button>
-                                    <Button x:Name="BtnPinScreenshot" Style="{StaticResource SidebarButtonStyle}" Height="38" Padding="4,2" Click="BtnPinScreenshot_Click" ToolTip="자동 영역을 조정해 고정하고 클립보드에 복사 (F3)">
-                                        <TextBlock TextAlignment="Center" FontSize="10">📌 영역캡처 고정<LineBreak/><Run Text="F3" FontSize="9"/></TextBlock>
+                                    <Button x:Name="BtnPinScreenshot" Style="{StaticResource SidebarButtonStyle}" Height="38" Padding="4,2" Click="BtnPinScreenshot_Click" ToolTip="새 영역을 선택해 화면에 고정하고 클립보드에 복사 · F3은 최근 캡처/클립보드 이미지 고정">
+                                        <TextBlock TextAlignment="Center" FontSize="10">📌 새 영역 고정<LineBreak/><Run Text="F3: 붙여넣기" FontSize="9"/></TextBlock>
                                     </Button>
                                     <Button x:Name="BtnSaveScreenshot" Style="{StaticResource SidebarButtonStyle}" Height="38" Padding="4,2" Click="BtnSaveScreenshot_Click" ToolTip="자동 영역을 조정해 편집 및 저장 (F1)">
                                         <TextBlock TextAlignment="Center" FontSize="10">📸 캡처 저장<LineBreak/><Run Text="F1" FontSize="9"/></TextBlock>

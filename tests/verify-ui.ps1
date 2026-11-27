@@ -23,7 +23,7 @@ $save = $window.FindName('BtnSaveScreenshot')
 if ($clear.Parent -ne $zoom.Parent -or $pin.Parent -ne $save.Parent -or $clear.Parent -ne $pin.Parent -or
     $clear.TransformToAncestor($card).Transform([Windows.Point]::new(0,0)).X -ge $zoom.TransformToAncestor($card).Transform([Windows.Point]::new(0,0)).X -or
     $pin.TransformToAncestor($card).Transform([Windows.Point]::new(0,0)).X -ge $save.TransformToAncestor($card).Transform([Windows.Point]::new(0,0)).X) { throw 'Capture/zoom button order failed' }
-if ($save.Content.Inlines.LastInline.Text -ne 'F1' -or $pin.Content.Inlines.LastInline.Text -ne 'F3') { throw 'Capture shortcut labels are stale' }
+if ($save.Content.Inlines.LastInline.Text -ne 'F1' -or $pin.Content.Inlines.LastInline.Text -notlike 'F3*') { throw 'Capture shortcut labels are stale' }
 if ($window.FindName('BtnClose').ToolTip -ne '프로그램 종료' -or $window.FindName('BtnSaveDrawing').ToolTip -notmatch 'PNG') { throw 'Exit or drawing save action missing' }
 $shortcutSource = Get-Content (Join-Path $root 'src\Views\FloatingToolbarWindow.xaml.cs') -Raw
 if ($shortcutSource -notmatch 'HOTKEY_ID_CAPTURE, 0x4000, VK_F1' -or $shortcutSource -notmatch 'HOTKEY_ID_PIN, 0x4000, VK_F3') { throw 'F1/F3 global hotkeys missing' }

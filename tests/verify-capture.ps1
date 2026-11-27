@@ -15,6 +15,9 @@ $selector = [Panseo.Views.RegionCaptureWindow]::new($image,[Drawing.Rectangle]::
 $map = $selector.GetType().GetMethod('MapToViewport',[Reflection.BindingFlags]'Static,NonPublic')
 $mapped = $map.Invoke($null,@([Drawing.Rectangle]::new(1920,100,500,400),[Drawing.Rectangle]::new(0,0,4992,1728),[Windows.Size]::new(2496,864)))
 if ($mapped.Left -ne 960 -or $mapped.Top -ne 50 -or $mapped.Width -ne 250 -or $mapped.Height -ne 200) { throw 'Automatic region mapping across monitors failed' }
+$toDesktop = $selector.GetType().GetMethod('MapToDesktop',[Reflection.BindingFlags]'Static,NonPublic')
+$physical = $toDesktop.Invoke($null,@([Windows.Rect]::new(960,50,250,200),[Drawing.Rectangle]::new(0,0,4992,1728),[Windows.Size]::new(2496,864)))
+if ($physical.X -ne 1920 -or $physical.Y -ne 100 -or $physical.Width -ne 500 -or $physical.Height -ne 400) { throw 'Pinned capture location mapping failed' }
 $surface = $selector.GetType().GetField('_surface',$flags).GetValue($selector)
 $surface.Measure([Windows.Size]::new(320,200))
 $surface.Arrange([Windows.Rect]::new(0,0,320,200))
@@ -63,6 +66,9 @@ $detector = $assembly.GetType('Panseo.Helpers.CaptureTargetDetector').GetMethod(
 $cursor = [Windows.Forms.Cursor]::Position
 $target = $detector.Invoke($null,@($cursor,[Windows.Forms.SystemInformation]::VirtualScreen))
 if (-not $target.Contains($cursor) -or $target.Width -lt 24 -or $target.Height -lt 24) { throw 'Automatic target detection failed' }
+$detectWindow = $assembly.GetType('Panseo.Helpers.CaptureTargetDetector').GetMethod('DetectWindow',[Reflection.BindingFlags]'Static,NonPublic')
+$windowTarget = $detectWindow.Invoke($null,@($cursor,[Windows.Forms.SystemInformation]::VirtualScreen))
+if (-not $windowTarget.Contains($cursor) -or $windowTarget.Width -lt $target.Width -or $windowTarget.Height -lt $target.Height) { throw 'Window target toggle failed' }
 $handles = $selector.GetType().GetField('_handles',$flags).GetValue($selector)
 if ($handles.Count -ne 8 -or @($handles | Where-Object { $_.Visibility -ne [Windows.Visibility]::Visible }).Count -ne 0) { throw 'Selection resize handles are hidden' }
 $confirm = $selector.GetType().GetField('_confirm',$flags).GetValue($selector)
