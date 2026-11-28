@@ -22,7 +22,7 @@ $pin = $window.FindName('BtnPinScreenshot')
 $save = $window.FindName('BtnSaveScreenshot')
 if ($clear.Parent -ne $zoom.Parent -or $pin.Parent -ne $save.Parent -or $clear.Parent -ne $pin.Parent -or
     $clear.TransformToAncestor($card).Transform([Windows.Point]::new(0,0)).X -ge $zoom.TransformToAncestor($card).Transform([Windows.Point]::new(0,0)).X -or
-    $pin.TransformToAncestor($card).Transform([Windows.Point]::new(0,0)).X -ge $save.TransformToAncestor($card).Transform([Windows.Point]::new(0,0)).X) { throw 'Capture/zoom button order failed' }
+    $save.TransformToAncestor($card).Transform([Windows.Point]::new(0,0)).X -ge $pin.TransformToAncestor($card).Transform([Windows.Point]::new(0,0)).X) { throw 'Capture/zoom button order failed' }
 if ($save.Content.Inlines.LastInline.Text -ne 'F1' -or $pin.Content.Inlines.LastInline.Text -notlike 'F3*') { throw 'Capture shortcut labels are stale' }
 if ($window.FindName('BtnClose').ToolTip -ne '프로그램 종료' -or $window.FindName('BtnSaveDrawing').ToolTip -notmatch 'PNG') { throw 'Exit or drawing save action missing' }
 $shortcutSource = Get-Content (Join-Path $root 'src\Views\FloatingToolbarWindow.xaml.cs') -Raw
