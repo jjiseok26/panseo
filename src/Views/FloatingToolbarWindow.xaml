@@ -260,7 +260,7 @@
                         <!-- 섹션 2: ✏️ 판서 & 도형 그리기 도구 -->
                         <Border Background="{StaticResource ItemBgBrush}" BorderBrush="#15FFFFFF" BorderThickness="1" CornerRadius="8" Padding="8,6" Margin="0,0,0,8">
                             <StackPanel Orientation="Vertical">
-                                <TextBlock Text="✏️ 판서 &amp; 그리기 도구" Foreground="{StaticResource TextSecondaryBrush}" FontSize="11" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                                <TextBlock Text="✏️ 판서 &amp; 그리기 도구 [Ctrl+2]" Foreground="{StaticResource TextSecondaryBrush}" FontSize="11" FontWeight="SemiBold" Margin="0,0,0,4"/>
 
                                 <!-- 마우스 조작 모드 (판서 해제) -->
                                 <RadioButton x:Name="RbToolMouse" Content="🖱️ 마우스 조작 모드 [M]" GroupName="DrawingToolGroup" Style="{StaticResource SidebarToggleButtonStyle}" IsChecked="True" Click="DrawingTool_Click" ToolTip="판서 중 M으로 일반 마우스 상태로 복귀"/>
