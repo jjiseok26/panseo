@@ -939,7 +939,9 @@ namespace Panseo.Views
         private async void BtnSaveDrawing_Click(object sender, RoutedEventArgs e)
         {
             if (_overlayManager == null || _isCapturing) return;
-            var drawing = _zoomWindow != null ? _zoomWindow.RenderDrawingOnly() : _overlayManager.RenderDrawing();
+            var screen = _zoomWindow == null ? ChooseDrawingScreen() : null;
+            if (_zoomWindow == null && screen == null) return;
+            var drawing = _zoomWindow != null ? _zoomWindow.RenderDrawingOnly() : _overlayManager.RenderDrawing(screen);
             if (drawing == null)
             {
                 MessageBox.Show(this, "저장할 판서 내용이 없습니다.", "Panseo", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -961,7 +963,7 @@ namespace Panseo.Views
                     AppSettings.Instance.PointerShape = PointerShape.None;
                     Hide();
                     await Task.Delay(350);
-                    image = ScreenCapture.Take(System.Windows.Forms.SystemInformation.VirtualScreen);
+                    image = ScreenCapture.Take(screen.Bounds);
                 }
                 catch (Exception ex)
                 {
@@ -977,6 +979,40 @@ namespace Panseo.Views
                 }
             }
             CaptureFiles.Save(this, image, "판서 이미지 저장");
+        }
+
+        private System.Windows.Forms.Screen ChooseDrawingScreen()
+        {
+            var screens = System.Windows.Forms.Screen.AllScreens;
+            if (screens.Length == 1) return screens[0];
+            var dialog = new Window { Title = "저장할 판서 모니터 선택", Owner = this, Width = 380,
+                SizeToContent = SizeToContent.Height, ResizeMode = ResizeMode.NoResize,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner, ShowInTaskbar = false,
+                Background = Brushes.White, Topmost = true };
+            var panel = new StackPanel { Margin = new Thickness(20) };
+            panel.Children.Add(new TextBlock { Text = "판서를 저장할 모니터를 선택하세요.",
+                FontSize = 15, Margin = new Thickness(0, 0, 0, 12) });
+            var list = new ListBox { Height = Math.Min(220, screens.Length * 36 + 8), FontSize = 13 };
+            for (int i = 0; i < screens.Length; i++)
+            {
+                var bounds = screens[i].Bounds;
+                list.Items.Add(string.Format("모니터 {0}{1}  ·  {2} × {3}  ·  위치 {4}, {5}",
+                    i + 1, screens[i].Primary ? " (주 화면)" : "", bounds.Width, bounds.Height, bounds.X, bounds.Y));
+            }
+            list.SelectedIndex = Math.Max(0, Array.IndexOf(screens,
+                System.Windows.Forms.Screen.FromPoint(System.Windows.Forms.Cursor.Position)));
+            panel.Children.Add(list);
+            var buttons = new StackPanel { Orientation = Orientation.Horizontal,
+                HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0, 16, 0, 0) };
+            var cancel = new Button { Content = "취소", Width = 72, Height = 34,
+                Margin = new Thickness(0, 0, 8, 0), IsCancel = true };
+            var confirm = new Button { Content = "선택", Width = 72, Height = 34, IsDefault = true };
+            confirm.Click += (s, e) => { if (list.SelectedIndex >= 0) dialog.DialogResult = true; };
+            buttons.Children.Add(cancel);
+            buttons.Children.Add(confirm);
+            panel.Children.Add(buttons);
+            dialog.Content = panel;
+            return dialog.ShowDialog() == true ? screens[list.SelectedIndex] : null;
         }
 
         private void BtnPinScreenshot_Click(object sender, RoutedEventArgs e)

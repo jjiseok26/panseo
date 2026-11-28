@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Forms;
-using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using Microsoft.Win32;
 using Panseo.Views;
@@ -80,28 +79,11 @@ namespace Panseo.Helpers
             Panseo.Models.AppSettings.Instance.ResetNumbering();
         }
 
-        public BitmapSource RenderDrawing()
+        public BitmapSource RenderDrawing(Screen screen)
         {
-            var desktop = SystemInformation.VirtualScreen;
-            var visual = new DrawingVisual();
-            bool hasDrawing = false;
-            using (var context = visual.RenderOpen())
-            {
-                foreach (var overlay in _overlayWindows)
-                {
-                    var image = overlay.RenderDrawing();
-                    if (image == null) continue;
-                    hasDrawing = true;
-                    var bounds = overlay.TargetScreen.Bounds;
-                    context.DrawImage(image, new Rect(bounds.Left - desktop.Left, bounds.Top - desktop.Top,
-                        bounds.Width, bounds.Height));
-                }
-            }
-            if (!hasDrawing) return null;
-            var result = new RenderTargetBitmap(desktop.Width, desktop.Height, 96, 96, PixelFormats.Pbgra32);
-            result.Render(visual);
-            result.Freeze();
-            return result;
+            foreach (var overlay in _overlayWindows)
+                if (overlay.TargetScreen.Bounds == screen.Bounds) return overlay.RenderDrawing();
+            return null;
         }
 
         private void CloseAllOverlays()
