@@ -41,12 +41,14 @@ namespace Panseo.Views
         private readonly TextBox _startNumberInput;
         private readonly TextBlock _strokeValue;
         private readonly Slider _strokeSlider;
+        private readonly bool _screenZoom;
         public System.Drawing.Rectangle? CaptureBounds { get; set; }
 
         public CaptureEditorWindow(BitmapSource image) : this(image, false) { }
 
         protected CaptureEditorWindow(BitmapSource image, bool screenZoom)
         {
+            _screenZoom = screenZoom;
             Title = "Panseo 캡처 편집";
             Topmost = true;
             WindowStartupLocation = WindowStartupLocation.CenterScreen;
@@ -62,16 +64,17 @@ namespace Panseo.Views
             root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
             var tools = new StackPanel { Margin = new Thickness(8), Background = new SolidColorBrush(Color.FromRgb(48, 49, 52)) };
             var drawingTools = AddGroup(tools, "그리기");
-            AddTool(drawingTools, "✥", "이동 (Ctrl+M)", DrawingTool.None);
-            AddTool(drawingTools, "✎", "펜 (Ctrl+P)", DrawingTool.Pen);
-            AddTool(drawingTools, "▰", "형광펜 (Ctrl+H)", DrawingTool.Highlighter);
-            AddTool(drawingTools, "╱", "직선 (Ctrl+L)", DrawingTool.Line);
-            AddTool(drawingTools, CreateEraserIcon(), "지우개 (Ctrl+E)", DrawingTool.Eraser);
-            AddTool(drawingTools, "□", "사각형 (Ctrl+R)", DrawingTool.Rectangle);
-            AddTool(drawingTools, "○", "원 (Ctrl+O)", DrawingTool.Ellipse);
-            AddTool(drawingTools, "➜", "화살표 (Ctrl+A)", DrawingTool.Arrow);
-            AddTool(drawingTools, "T", "글자 (Ctrl+T)", DrawingTool.Text);
-            AddTool(drawingTools, "①", "번호 (Ctrl+N)", DrawingTool.Number);
+            string keyPrefix = screenZoom ? "" : "Ctrl+";
+            AddTool(drawingTools, "✥", "이동 (" + keyPrefix + "M)", DrawingTool.None);
+            AddTool(drawingTools, "✎", "펜 (" + keyPrefix + "P)", DrawingTool.Pen);
+            AddTool(drawingTools, "▰", "형광펜 (" + keyPrefix + "H)", DrawingTool.Highlighter);
+            AddTool(drawingTools, "╱", "직선 (" + keyPrefix + "L)", DrawingTool.Line);
+            AddTool(drawingTools, CreateEraserIcon(), "지우개 (" + keyPrefix + "E)", DrawingTool.Eraser);
+            AddTool(drawingTools, "□", "사각형 (" + keyPrefix + "R)", DrawingTool.Rectangle);
+            AddTool(drawingTools, "○", "원 (" + keyPrefix + "O)", DrawingTool.Ellipse);
+            AddTool(drawingTools, "➜", "화살표 (" + keyPrefix + "A)", DrawingTool.Arrow);
+            AddTool(drawingTools, "T", "글자 (" + keyPrefix + "T)", DrawingTool.Text);
+            AddTool(drawingTools, "①", "번호 (" + keyPrefix + "N)", DrawingTool.Number);
             AddButton(drawingTools, "↺", "번호 1부터 시작", ResetNumbering);
             var numberControls = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(3) };
             numberControls.Children.Add(new TextBlock { Text = "№", ToolTip = "시작 번호", Foreground = Brushes.White, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0,0,5,0) });
@@ -92,7 +95,7 @@ namespace Panseo.Views
             AddColor(colorTools, Colors.DeepSkyBlue, "파랑");
             AddColor(colorTools, Colors.White, "흰색");
             AddColor(colorTools, Colors.Black, "검정");
-            AddButton(colorTools, CreatePaletteIcon(), "색상 선택", ChooseDrawingColor);
+            AddButton(colorTools, CreatePaletteIcon(), screenZoom ? "색상 선택 (C)" : "색상 선택", ChooseDrawingColor);
             colorTools.Children.Add(new TextBlock { Text = "굵기", ToolTip = "선 굵기 · Alt+휠로 조절", Foreground = Foreground,
                 VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(6, 0, 3, 0) });
             _strokeSlider = new Slider { Minimum = 2, Maximum = 24, Value = AppSettings.Instance.StrokeThickness,
@@ -485,6 +488,35 @@ namespace Panseo.Views
             if (Keyboard.FocusedElement is TextBox) return;
             if (Keyboard.Modifiers == ModifierKeys.None && e.Key == Key.F1) { SaveCapture(); e.Handled = true; return; }
             if (Keyboard.Modifiers == ModifierKeys.None && e.Key == Key.F3) { PinCapture(); e.Handled = true; return; }
+            if (_screenZoom && _tool != DrawingTool.None && Keyboard.Modifiers == ModifierKeys.None)
+            {
+                switch (e.Key)
+                {
+                    case Key.P: SelectTool(DrawingTool.Pen); break;
+                    case Key.H: SelectTool(DrawingTool.Highlighter); break;
+                    case Key.A: SelectTool(DrawingTool.Arrow); break;
+                    case Key.R: SelectTool(DrawingTool.Rectangle); break;
+                    case Key.O: SelectTool(DrawingTool.Ellipse); break;
+                    case Key.L: SelectTool(DrawingTool.Line); break;
+                    case Key.T: SelectTool(DrawingTool.Text); break;
+                    case Key.E: SelectTool(DrawingTool.Eraser); break;
+                    case Key.N: SelectTool(DrawingTool.Number); break;
+                    case Key.M: SelectTool(DrawingTool.None); break;
+                    case Key.C: ChooseDrawingColor(); break;
+                    case Key.Z: Undo(); break;
+                    case Key.Y: Redo(); break;
+                    case Key.Delete: ClearAll(); break;
+                    case Key.D1: case Key.NumPad1: AppSettings.Instance.DrawingColor = Colors.Red; break;
+                    case Key.D2: case Key.NumPad2: AppSettings.Instance.DrawingColor = Colors.Yellow; break;
+                    case Key.D3: case Key.NumPad3: AppSettings.Instance.DrawingColor = Colors.LimeGreen; break;
+                    case Key.D4: case Key.NumPad4: AppSettings.Instance.DrawingColor = Colors.DeepSkyBlue; break;
+                    case Key.D5: case Key.NumPad5: AppSettings.Instance.DrawingColor = Colors.White; break;
+                    case Key.D6: case Key.NumPad6: AppSettings.Instance.DrawingColor = Colors.Black; break;
+                    default: return;
+                }
+                e.Handled = true;
+                return;
+            }
             if (Keyboard.Modifiers == (ModifierKeys.Control | ModifierKeys.Shift) && e.Key == Key.D1)
             { AppSettings.Instance.DrawingColor = Colors.Red; e.Handled = true; return; }
             if (Keyboard.Modifiers != ModifierKeys.Control) return;

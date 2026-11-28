@@ -73,7 +73,7 @@ namespace Panseo.Views
             Box(numbers, 234, 0, 22, 25, "+", Brushes.Lavender);
             foreach (int number in new[] { 5, 6, 7 })
                 numbers.Children.Add(DrawingHelper.CreateNumberStamp(number, new Point(40 + (number - 5) * 90, 66), Color.FromRgb(79, 70, 229), 5));
-            cards.Children.Add(Card("Ctrl+N · 원하는 번호부터 시작", numbers,
+            cards.Children.Add(Card("판서 중 N · 원하는 번호부터 시작", numbers,
                 "시작번호에 숫자를 입력하고 ‘적용’ 또는 Enter를 누르세요. 오른쪽 − / +로 번호 크기를 조절합니다. 5를 입력하면 다음 클릭부터 5, 6, 7…로 이어집니다."));
             var pin = Picture();
             Box(pin, 18, 8, 224, 84, "", Brushes.AliceBlue);

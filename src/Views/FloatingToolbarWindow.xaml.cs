@@ -47,9 +47,11 @@ namespace Panseo.Views
         private bool _zoomHotkeyRegistered;
         private bool _zoomNumpadHotkeyRegistered;
         private bool _zoomShortcutDown;
+        private bool _drawingHotkeyRegistered;
+        private bool _drawingNumpadHotkeyRegistered;
+        private bool _drawingShortcutDown;
 
         private const int HOTKEY_ID_F1 = 9000;
-        private const int HOTKEY_ID_F2 = 9001;
         private const int HOTKEY_ID_F3 = 9002;
         private const int HOTKEY_ID_F4 = 9003;
         private const int HOTKEY_ID_CAPTURE = 9009;
@@ -57,6 +59,8 @@ namespace Panseo.Views
         private const int HOTKEY_ID_MOUSE = 9011;
         private const int HOTKEY_ID_ZOOM = 9012;
         private const int HOTKEY_ID_ZOOM_NUMPAD = 9013;
+        private const int HOTKEY_ID_DRAWING = 9014;
+        private const int HOTKEY_ID_DRAWING_NUMPAD = 9015;
         private const int HOTKEY_ID_POINTER_FIRST = 9004;
         private static readonly PointerShape[] PointerShortcutShapes =
         {
@@ -65,7 +69,6 @@ namespace Panseo.Views
         };
         private const uint MOD_CONTROL = 0x0002;
         private const int VK_F1 = 0x70;
-        private const int VK_F2 = 0x71;
         private const int VK_F3 = 0x72;
         private const int VK_F4 = 0x73;
 
@@ -106,7 +109,6 @@ namespace Panseo.Views
                 }
 
                 Win32.RegisterHotKey(helper.Handle, HOTKEY_ID_F1, MOD_CONTROL, VK_F1);
-                Win32.RegisterHotKey(helper.Handle, HOTKEY_ID_F2, MOD_CONTROL, VK_F2);
                 Win32.RegisterHotKey(helper.Handle, HOTKEY_ID_F3, MOD_CONTROL, VK_F3);
                 Win32.RegisterHotKey(helper.Handle, HOTKEY_ID_F4, MOD_CONTROL, VK_F4);
                 _captureHotkeyRegistered = Win32.RegisterHotKey(helper.Handle, HOTKEY_ID_CAPTURE, 0x4000, VK_F1);
@@ -114,6 +116,8 @@ namespace Panseo.Views
                 Win32.RegisterHotKey(helper.Handle, HOTKEY_ID_MOUSE, MOD_CONTROL, 0x4D);
                 _zoomHotkeyRegistered = Win32.RegisterHotKey(helper.Handle, HOTKEY_ID_ZOOM, MOD_CONTROL | 0x4000, 0x31);
                 _zoomNumpadHotkeyRegistered = Win32.RegisterHotKey(helper.Handle, HOTKEY_ID_ZOOM_NUMPAD, MOD_CONTROL | 0x4000, 0x61);
+                _drawingHotkeyRegistered = Win32.RegisterHotKey(helper.Handle, HOTKEY_ID_DRAWING, MOD_CONTROL | 0x4000, 0x32);
+                _drawingNumpadHotkeyRegistered = Win32.RegisterHotKey(helper.Handle, HOTKEY_ID_DRAWING_NUMPAD, MOD_CONTROL | 0x4000, 0x62);
                 for (int i = 0; i < PointerShortcutShapes.Length; i++)
                 {
                     Win32.RegisterHotKey(helper.Handle, HOTKEY_ID_POINTER_FIRST + i, MOD_CONTROL, (uint)(0x74 + i)); // Ctrl+F5 ~ F9
@@ -146,7 +150,6 @@ namespace Panseo.Views
             {
                 var helper = new WindowInteropHelper(this);
                 Win32.UnregisterHotKey(helper.Handle, HOTKEY_ID_F1);
-                Win32.UnregisterHotKey(helper.Handle, HOTKEY_ID_F2);
                 Win32.UnregisterHotKey(helper.Handle, HOTKEY_ID_F3);
                 Win32.UnregisterHotKey(helper.Handle, HOTKEY_ID_F4);
                 if (_captureHotkeyRegistered) Win32.UnregisterHotKey(helper.Handle, HOTKEY_ID_CAPTURE);
@@ -154,6 +157,8 @@ namespace Panseo.Views
                 Win32.UnregisterHotKey(helper.Handle, HOTKEY_ID_MOUSE);
                 if (_zoomHotkeyRegistered) Win32.UnregisterHotKey(helper.Handle, HOTKEY_ID_ZOOM);
                 if (_zoomNumpadHotkeyRegistered) Win32.UnregisterHotKey(helper.Handle, HOTKEY_ID_ZOOM_NUMPAD);
+                if (_drawingHotkeyRegistered) Win32.UnregisterHotKey(helper.Handle, HOTKEY_ID_DRAWING);
+                if (_drawingNumpadHotkeyRegistered) Win32.UnregisterHotKey(helper.Handle, HOTKEY_ID_DRAWING_NUMPAD);
                 for (int i = 0; i < PointerShortcutShapes.Length; i++)
                 {
                     Win32.UnregisterHotKey(helper.Handle, HOTKEY_ID_POINTER_FIRST + i);
@@ -181,6 +186,12 @@ namespace Panseo.Views
                 if (_isCapturing) { handled = true; return IntPtr.Zero; }
                 int id = wParam.ToInt32();
                 if (id == HOTKEY_ID_ZOOM || id == HOTKEY_ID_ZOOM_NUMPAD) { ToggleScreenZoom(); handled = true; return IntPtr.Zero; }
+                if (id == HOTKEY_ID_DRAWING || id == HOTKEY_ID_DRAWING_NUMPAD)
+                {
+                    if (GetActiveCaptureEditor() == null || _zoomWindow != null) ToggleDrawingMode();
+                    handled = true;
+                    return IntPtr.Zero;
+                }
                 if (id == HOTKEY_ID_CAPTURE || id == HOTKEY_ID_PIN)
                 {
                     var editor = _zoomWindow != null ? (CaptureEditorWindow)_zoomWindow : GetActiveCaptureEditor();
@@ -203,11 +214,6 @@ namespace Panseo.Views
                 else if (id == HOTKEY_ID_F1)
                 {
                     ToggleMenu();
-                    handled = true;
-                }
-                else if (id == HOTKEY_ID_F2)
-                {
-                    ToggleDrawingMode();
                     handled = true;
                 }
                 else if (id == HOTKEY_ID_F3)
@@ -239,6 +245,25 @@ namespace Panseo.Views
 
         private IntPtr KeyboardHookCallback(int nCode, IntPtr wParam, IntPtr lParam)
         {
+            if (nCode >= 0 && (!_drawingHotkeyRegistered || !_drawingNumpadHotkeyRegistered))
+            {
+                int message = wParam.ToInt32();
+                var key = (Win32.KBDLLHOOKSTRUCT)Marshal.PtrToStructure(lParam, typeof(Win32.KBDLLHOOKSTRUCT));
+                bool missingRegistration = key.vkCode == 0x32 ? !_drawingHotkeyRegistered :
+                    key.vkCode == 0x62 && !_drawingNumpadHotkeyRegistered;
+                if ((message == Win32.WM_KEYUP || message == Win32.WM_SYSKEYUP) &&
+                    (key.vkCode == 0x32 || key.vkCode == 0x62)) _drawingShortcutDown = false;
+                if (missingRegistration && IsDrawingModeKeyCombination(message, key.vkCode,
+                    (Win32.GetAsyncKeyState(0x11) & 0x8000) != 0,
+                    (Win32.GetAsyncKeyState(0x10) & 0x8000) != 0,
+                    (Win32.GetAsyncKeyState(0x12) & 0x8000) != 0))
+                {
+                    if (!_drawingShortcutDown && !_isCapturing && (GetActiveCaptureEditor() == null || _zoomWindow != null))
+                        Dispatcher.BeginInvoke((Action)(() => ToggleDrawingMode()));
+                    _drawingShortcutDown = true;
+                    return new IntPtr(1);
+                }
+            }
             if (nCode >= 0 && (!_zoomHotkeyRegistered || !_zoomNumpadHotkeyRegistered))
             {
                 int message = wParam.ToInt32();
@@ -286,10 +311,8 @@ namespace Panseo.Views
                         return new IntPtr(1);
                     }
                     bool isDrawingActive = AppSettings.Instance.CurrentTool != DrawingTool.None;
-                    bool isMenuOpen = _isMenuOpen;
-
-                    // 판서 모드 동작 중이거나 서브메뉴 창이 열려 있을 때 단축키 실행
-                    if (isDrawingActive || isMenuOpen)
+                    // 단일 키 도구 단축키는 판서 모드에서만 사용한다.
+                    if (isDrawingActive)
                     {
                         if (HandleDrawingShortcut(vk))
                         {
@@ -305,6 +328,12 @@ namespace Panseo.Views
         {
             return (message == Win32.WM_KEYDOWN || message == Win32.WM_SYSKEYDOWN) &&
                 (key == 0x31 || key == 0x61) && control && !shift && !alt;
+        }
+
+        internal static bool IsDrawingModeKeyCombination(int message, uint key, bool control, bool shift, bool alt)
+        {
+            return (message == Win32.WM_KEYDOWN || message == Win32.WM_SYSKEYDOWN) &&
+                (key == 0x32 || key == 0x62) && control && !shift && !alt;
         }
 
         internal static double NextPointerSize(double current, int step)
@@ -333,39 +362,50 @@ namespace Panseo.Views
                 return false;
             }
 
-            if (Keyboard.Modifiers == (ModifierKeys.Control | ModifierKeys.Shift) && (vk == 0x31 || vk == 0x61))
+            if (Keyboard.Modifiers != ModifierKeys.None) return false;
+
+            if (vk == 0x31 || vk == 0x61)
             {
                 Dispatcher.BeginInvoke((Action)(() => SetDrawingColor((Color)ColorConverter.ConvertFromString("#FFFF3B30"))));
                 return true;
             }
 
-            // 도구와 색상 단축키는 Ctrl 조합만 처리한다.
-            if (Keyboard.Modifiers != ModifierKeys.Control) return false;
-
-            if (vk == 0x5A) // Ctrl+Z
+            if (vk == 0x5A) // Z: 되돌리기
             {
                 Dispatcher.BeginInvoke((Action)(() => _overlayManager.Undo()));
                 return true;
             }
-            if (vk == 0x59) // Ctrl+Y
+            if (vk == 0x59) // Y: 다시 실행
             {
                 Dispatcher.BeginInvoke((Action)(() => _overlayManager.Redo()));
                 return true;
             }
 
-            if (vk == 0x2E) // Ctrl+Delete: 전체 지우기
+            if (vk == 0x2E) // Delete: 전체 지우기
             {
                 Dispatcher.BeginInvoke((Action)(() => BtnClearAll_Click(null, null)));
                 return true;
             }
 
-            if (vk == 0x4E) // Ctrl+N: 번호 넣기
+            if (vk == 0x4D) // M: 마우스 조작 모드
+            {
+                Dispatcher.BeginInvoke((Action)(() => SelectTool(DrawingTool.None)));
+                return true;
+            }
+
+            if (vk == 0x43) // C: 색상 선택
+            {
+                Dispatcher.BeginInvoke((Action)(() => BtnDrawingColorPicker_Click(null, null)));
+                return true;
+            }
+
+            if (vk == 0x4E) // N: 번호 넣기
             {
                 Dispatcher.BeginInvoke((Action)(() => SelectTool(DrawingTool.Number)));
                 return true;
             }
 
-            // 도구 단축키 (Ctrl + 영문 알파벳 키)
+            // 도구 단축키 (판서 모드에서 Ctrl 없이 사용)
             if (vk == 0x50) // P: 일반 펜 (Pen)
             {
                 Dispatcher.BeginInvoke((Action)(() => SelectTool(DrawingTool.Pen)));
@@ -407,7 +447,7 @@ namespace Panseo.Views
                 return true;
             }
 
-            // 색상 팔레트 단축키 (숫자 키 2 ~ 6 및 넘패드 2 ~ 6)
+            // 색상 팔레트 단축키 (숫자 키 1 ~ 6 및 넘패드 1 ~ 6)
             // 2: 노랑
             if (vk == 0x32 || vk == 0x62)
             {

@@ -191,7 +191,7 @@ namespace Panseo
                     _toolbarWindow.Dispatcher.Invoke((Action)(() => _toolbarWindow.TogglePointerEffect()));
                 }));
 
-                contextMenu.MenuItems.Add(new MenuItem("🖊️ 판서 모드 토글 (Ctrl+F2)", (s, ev) =>
+                contextMenu.MenuItems.Add(new MenuItem("🖊️ 판서 모드 토글 (Ctrl+2)", (s, ev) =>
                 {
                     _toolbarWindow.Dispatcher.Invoke((Action)(() => _toolbarWindow.ToggleDrawingMode()));
                 }));

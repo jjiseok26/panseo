@@ -263,19 +263,19 @@
                                 <TextBlock Text="✏️ 판서 &amp; 그리기 도구" Foreground="{StaticResource TextSecondaryBrush}" FontSize="11" FontWeight="SemiBold" Margin="0,0,0,4"/>
 
                                 <!-- 마우스 조작 모드 (판서 해제) -->
-                                <RadioButton x:Name="RbToolMouse" Content="🖱️ 마우스 조작 모드 [Ctrl+M]" GroupName="DrawingToolGroup" Style="{StaticResource SidebarToggleButtonStyle}" IsChecked="True" Click="DrawingTool_Click" ToolTip="일반 마우스 상태로 복귀 (Ctrl+M)"/>
+                                <RadioButton x:Name="RbToolMouse" Content="🖱️ 마우스 조작 모드 [M]" GroupName="DrawingToolGroup" Style="{StaticResource SidebarToggleButtonStyle}" IsChecked="True" Click="DrawingTool_Click" ToolTip="판서 중 M으로 일반 마우스 상태로 복귀"/>
 
                                 <!-- 그리기 도구 그리드 -->
                                 <UniformGrid Columns="2" Margin="0,2">
-                                    <RadioButton x:Name="RbToolPen" Content="✏️ 일반 펜 [Ctrl+P]" GroupName="DrawingToolGroup" Style="{StaticResource SidebarToggleButtonStyle}" Click="DrawingTool_Click" ToolTip="자유 곡선 필기 (단축키: Ctrl+P)"/>
-                                    <RadioButton x:Name="RbToolHighlighter" Content="🖍️ 형광펜 [Ctrl+H]" GroupName="DrawingToolGroup" Style="{StaticResource SidebarToggleButtonStyle}" Click="DrawingTool_Click" ToolTip="반투명 형광펜 (단축키: Ctrl+H)"/>
-                                    <RadioButton x:Name="RbToolArrow" Content="➡️ 화살표 [Ctrl+A]" GroupName="DrawingToolGroup" Style="{StaticResource SidebarToggleButtonStyle}" Click="DrawingTool_Click" ToolTip="방향 화살표 그리기 (단축키: Ctrl+A)"/>
-                                    <RadioButton x:Name="RbToolRectangle" Content="🔲 사각형 [Ctrl+R]" GroupName="DrawingToolGroup" Style="{StaticResource SidebarToggleButtonStyle}" Click="DrawingTool_Click" ToolTip="강조 사각 박스 (단축키: Ctrl+R)"/>
-                                    <RadioButton x:Name="RbToolEllipse" Content="⭕ 원/타원 [Ctrl+O]" GroupName="DrawingToolGroup" Style="{StaticResource SidebarToggleButtonStyle}" Click="DrawingTool_Click" ToolTip="동그라미 강조 (단축키: Ctrl+O)"/>
-                                    <RadioButton x:Name="RbToolLine" Content="➖ 직선 [Ctrl+L]" GroupName="DrawingToolGroup" Style="{StaticResource SidebarToggleButtonStyle}" Click="DrawingTool_Click" ToolTip="반듯한 직선 (단축키: Ctrl+L)"/>
-                                    <RadioButton x:Name="RbToolText" Content="🔤 글자 넣기 [Ctrl+T]" GroupName="DrawingToolGroup" Style="{StaticResource SidebarToggleButtonStyle}" Click="DrawingTool_Click" ToolTip="클릭하여 텍스트 입력 (단축키: Ctrl+T)"/>
-                                    <RadioButton x:Name="RbToolEraser" Content="🧽 지우개 [Ctrl+E]" GroupName="DrawingToolGroup" Style="{StaticResource SidebarToggleButtonStyle}" Click="DrawingTool_Click" ToolTip="클릭한 요소 지우기 (단축키: Ctrl+E)"/>
-                                    <RadioButton x:Name="RbToolNumber" Content="① 번호 [Ctrl+N]" GroupName="DrawingToolGroup" Style="{StaticResource SidebarToggleButtonStyle}" Click="DrawingTool_Click" ToolTip="클릭마다 동그라미 번호 1, 2, 3… 넣기"/>
+                                    <RadioButton x:Name="RbToolPen" Content="✏️ 일반 펜 [P]" GroupName="DrawingToolGroup" Style="{StaticResource SidebarToggleButtonStyle}" Click="DrawingTool_Click" ToolTip="판서 중 P: 자유 곡선 필기"/>
+                                    <RadioButton x:Name="RbToolHighlighter" Content="🖍️ 형광펜 [H]" GroupName="DrawingToolGroup" Style="{StaticResource SidebarToggleButtonStyle}" Click="DrawingTool_Click" ToolTip="판서 중 H: 반투명 형광펜"/>
+                                    <RadioButton x:Name="RbToolArrow" Content="➡️ 화살표 [A]" GroupName="DrawingToolGroup" Style="{StaticResource SidebarToggleButtonStyle}" Click="DrawingTool_Click" ToolTip="판서 중 A: 방향 화살표"/>
+                                    <RadioButton x:Name="RbToolRectangle" Content="🔲 사각형 [R]" GroupName="DrawingToolGroup" Style="{StaticResource SidebarToggleButtonStyle}" Click="DrawingTool_Click" ToolTip="판서 중 R: 사각 박스"/>
+                                    <RadioButton x:Name="RbToolEllipse" Content="⭕ 원/타원 [O]" GroupName="DrawingToolGroup" Style="{StaticResource SidebarToggleButtonStyle}" Click="DrawingTool_Click" ToolTip="판서 중 O: 동그라미"/>
+                                    <RadioButton x:Name="RbToolLine" Content="➖ 직선 [L]" GroupName="DrawingToolGroup" Style="{StaticResource SidebarToggleButtonStyle}" Click="DrawingTool_Click" ToolTip="판서 중 L: 직선"/>
+                                    <RadioButton x:Name="RbToolText" Content="🔤 글자 넣기 [T]" GroupName="DrawingToolGroup" Style="{StaticResource SidebarToggleButtonStyle}" Click="DrawingTool_Click" ToolTip="판서 중 T: 글자 입력"/>
+                                    <RadioButton x:Name="RbToolEraser" Content="🧽 지우개 [E]" GroupName="DrawingToolGroup" Style="{StaticResource SidebarToggleButtonStyle}" Click="DrawingTool_Click" ToolTip="판서 중 E: 요소 지우기"/>
+                                    <RadioButton x:Name="RbToolNumber" Content="① 번호 [N]" GroupName="DrawingToolGroup" Style="{StaticResource SidebarToggleButtonStyle}" Click="DrawingTool_Click" ToolTip="판서 중 N: 클릭마다 동그라미 번호 넣기"/>
                                     <Button x:Name="BtnResetNumber" Content="번호 1부터" Style="{StaticResource SidebarButtonStyle}" Click="BtnResetNumber_Click" ToolTip="기존 번호는 유지하고 다음 번호를 1로 초기화"/>
                                 </UniformGrid>
 
@@ -310,13 +310,13 @@
 
                                 <!-- 판서 색상 팔레트 -->
                                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,4,0,2">
-                                    <Button Background="#FFFF3B30" Style="{StaticResource ColorCircleButtonStyle}" Tag="#FFFF3B30" Click="BtnDrawingColor_Click" ToolTip="빨강 [단축키: Ctrl+Shift+1]"/>
-                                    <Button Background="#FFFFEB3B" Style="{StaticResource ColorCircleButtonStyle}" Tag="#FFFFEB3B" Click="BtnDrawingColor_Click" ToolTip="노랑 [단축키: Ctrl+2]"/>
-                                    <Button Background="#FF00E676" Style="{StaticResource ColorCircleButtonStyle}" Tag="#FF00E676" Click="BtnDrawingColor_Click" ToolTip="초록 [단축키: Ctrl+3]"/>
-                                    <Button Background="#FF29B6F6" Style="{StaticResource ColorCircleButtonStyle}" Tag="#FF29B6F6" Click="BtnDrawingColor_Click" ToolTip="파랑 [단축키: Ctrl+4]"/>
-                                    <Button Background="#FFFFFFFF" Style="{StaticResource ColorCircleButtonStyle}" Tag="#FFFFFFFF" Click="BtnDrawingColor_Click" ToolTip="흰색 [단축키: Ctrl+5]"/>
-                                    <Button Background="#FF1E1E1E" Style="{StaticResource ColorCircleButtonStyle}" Tag="#FF1E1E1E" Click="BtnDrawingColor_Click" ToolTip="검정 [단축키: Ctrl+6]"/>
-                                    <Button x:Name="BtnDrawingColorPicker" Content="🎨 선택" Style="{StaticResource SidebarButtonStyle}" Height="25" Padding="5,1" Click="BtnDrawingColorPicker_Click" ToolTip="원하는 판서 색상 선택"/>
+                                    <Button Background="#FFFF3B30" Style="{StaticResource ColorCircleButtonStyle}" Tag="#FFFF3B30" Click="BtnDrawingColor_Click" ToolTip="빨강 [1]"/>
+                                    <Button Background="#FFFFEB3B" Style="{StaticResource ColorCircleButtonStyle}" Tag="#FFFFEB3B" Click="BtnDrawingColor_Click" ToolTip="노랑 [2]"/>
+                                    <Button Background="#FF00E676" Style="{StaticResource ColorCircleButtonStyle}" Tag="#FF00E676" Click="BtnDrawingColor_Click" ToolTip="초록 [3]"/>
+                                    <Button Background="#FF29B6F6" Style="{StaticResource ColorCircleButtonStyle}" Tag="#FF29B6F6" Click="BtnDrawingColor_Click" ToolTip="파랑 [4]"/>
+                                    <Button Background="#FFFFFFFF" Style="{StaticResource ColorCircleButtonStyle}" Tag="#FFFFFFFF" Click="BtnDrawingColor_Click" ToolTip="흰색 [5]"/>
+                                    <Button Background="#FF1E1E1E" Style="{StaticResource ColorCircleButtonStyle}" Tag="#FF1E1E1E" Click="BtnDrawingColor_Click" ToolTip="검정 [6]"/>
+                                    <Button x:Name="BtnDrawingColorPicker" Content="🎨 선택 [C]" Style="{StaticResource SidebarButtonStyle}" Height="25" Padding="5,1" Click="BtnDrawingColorPicker_Click" ToolTip="판서 중 C: 원하는 색상 선택"/>
                                 </StackPanel>
                             </StackPanel>
                         </Border>
@@ -329,10 +329,10 @@
                                 <CheckBox x:Name="ChkBlackboard" Content="⬛ 칠판 배경 깔기 (Ctrl+F4)" Foreground="#E2E8F0" FontSize="11" Margin="2,2,0,6" Checked="ChkBlackboard_Changed" Unchecked="ChkBlackboard_Changed"/>
 
                                 <UniformGrid Columns="2">
-                                    <Button x:Name="BtnUndo" Content="↩ 되돌리기 [Ctrl+Z]" Style="{StaticResource SidebarButtonStyle}" Click="BtnUndo_Click" ToolTip="Ctrl+Z"/>
-                                    <Button x:Name="BtnRedo" Content="↪ 다시실행 [Ctrl+Y]" Style="{StaticResource SidebarButtonStyle}" Click="BtnRedo_Click" ToolTip="Ctrl+Y"/>
-                                    <Button x:Name="BtnClearAll" Style="{StaticResource SidebarButtonStyle}" Height="38" Padding="4,2" Click="BtnClearAll_Click" ToolTip="전체 지우기 (Ctrl+Delete)">
-                                        <TextBlock TextAlignment="Center" FontSize="10">🧹 전체 지우기<LineBreak/><Run Text="Ctrl+Delete" FontSize="9"/></TextBlock>
+                                    <Button x:Name="BtnUndo" Content="↩ 되돌리기 [Z]" Style="{StaticResource SidebarButtonStyle}" Click="BtnUndo_Click" ToolTip="판서 중 Z"/>
+                                    <Button x:Name="BtnRedo" Content="↪ 다시실행 [Y]" Style="{StaticResource SidebarButtonStyle}" Click="BtnRedo_Click" ToolTip="판서 중 Y"/>
+                                    <Button x:Name="BtnClearAll" Style="{StaticResource SidebarButtonStyle}" Height="38" Padding="4,2" Click="BtnClearAll_Click" ToolTip="판서 중 Delete: 전체 지우기">
+                                        <TextBlock TextAlignment="Center" FontSize="10">🧹 전체 지우기<LineBreak/><Run Text="Delete" FontSize="9"/></TextBlock>
                                     </Button>
                                     <Button x:Name="BtnScreenZoom" Style="{StaticResource SidebarButtonStyle}" Height="38" Padding="4,2" Click="BtnScreenZoom_Click" ToolTip="현재 화면을 휠로 확대/축소">
                                         <TextBlock TextAlignment="Center" FontSize="10">🔍 확대/축소<LineBreak/><Run Text="Ctrl+1" FontSize="9"/></TextBlock>
@@ -352,7 +352,7 @@
 
                 <!-- 하단 푸터: 단축키 안내 -->
                 <Border Grid.Row="2" Background="#12FFFFFF" CornerRadius="6" Padding="6,7" Margin="0,6,0,0">
-                    <TextBlock Text="Ctrl+F1: 메뉴 | Ctrl+F2: 판서 | Ctrl+F3: 포인터&#x0a;Ctrl+F4: 칠판 | Esc: 취소" Foreground="#88A0B8" FontSize="9.5" TextWrapping="Wrap" TextAlignment="Center"/>
+                    <TextBlock Text="Ctrl+F1: 메뉴 | Ctrl+2: 판서 | Ctrl+F3: 포인터&#x0a;Ctrl+F4: 칠판 | Esc: 취소" Foreground="#88A0B8" FontSize="9.5" TextWrapping="Wrap" TextAlignment="Center"/>
                 </Border>
             </Grid>
             </Viewbox>
