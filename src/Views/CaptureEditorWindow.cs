@@ -93,7 +93,7 @@ namespace Panseo.Views
             AddColor(colorTools, Colors.White, "흰색");
             AddColor(colorTools, Colors.Black, "검정");
             AddButton(colorTools, CreatePaletteIcon(), "색상 선택", ChooseDrawingColor);
-            colorTools.Children.Add(new TextBlock { Text = "굵기", ToolTip = "선 굵기 · 휠로도 조절", Foreground = Foreground,
+            colorTools.Children.Add(new TextBlock { Text = "굵기", ToolTip = "선 굵기 · Alt+휠로 조절", Foreground = Foreground,
                 VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(6, 0, 3, 0) });
             _strokeSlider = new Slider { Minimum = 2, Maximum = 24, Value = AppSettings.Instance.StrokeThickness,
                 Width = 105, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(3) };
@@ -110,6 +110,7 @@ namespace Panseo.Views
             AddButton(fileTools, "↶", "되돌리기 (Ctrl+Z)", Undo);
             AddButton(fileTools, "↷", "다시 실행 (Ctrl+Y)", Redo);
             AddButton(fileTools, "🗑", "전체 지우기", ClearAll);
+            AddButton(fileTools, "⧉", "이미지 복사 (Ctrl+C)", CopyCapture);
             AddButton(fileTools, "💾", "파일로 저장하기 (F1)", SaveCapture);
             AddButton(fileTools, "⚑", "화면 고정 (F3)", PinCapture);
             if (screenZoom)
@@ -144,18 +145,21 @@ namespace Panseo.Views
             _canvas.MouseMove += CanvasMouseMove;
             _canvas.MouseLeftButtonUp += (s, e) => FinishDrawing();
             _canvas.LostMouseCapture += (s, e) => FinishDrawing();
-            if (!screenZoom) _canvas.PreviewMouseWheel += (s, e) =>
-            {
-                _strokeSlider.Value = Math.Max(_strokeSlider.Minimum, Math.Min(_strokeSlider.Maximum,
-                    _strokeSlider.Value + Math.Sign(e.Delta)));
-                e.Handled = true;
-            };
+            _canvas.PreviewMouseWheel += (s, e) => AdjustStrokeWheel(Keyboard.Modifiers, e);
             KeyDown += EditorKeyDown;
             if (screenZoom)
             {
                 SelectTool(DrawingTool.None);
                 _status.Text = "휠: 확대/축소 · 이동 도구 또는 Ctrl+드래그: 화면 이동 · 도구 선택: 판서 · 확대 화면의 판서는 저장/고정 후 닫으세요.";
             }
+        }
+
+        internal void AdjustStrokeWheel(ModifierKeys modifiers, MouseWheelEventArgs e)
+        {
+            if (modifiers != ModifierKeys.Alt || e.Delta == 0) return;
+            _strokeSlider.Value = Math.Max(_strokeSlider.Minimum, Math.Min(_strokeSlider.Maximum,
+                _strokeSlider.Value + Math.Sign(e.Delta)));
+            e.Handled = true;
         }
 
         private static WrapPanel AddGroup(Panel toolbar, string title)
@@ -488,6 +492,7 @@ namespace Panseo.Views
             {
                 case Key.Z: Undo(); break;
                 case Key.Y: Redo(); break;
+                case Key.C: CopyCapture(); break;
                 case Key.M: SelectTool(DrawingTool.None); break;
                 case Key.P: SelectTool(DrawingTool.Pen); break;
                 case Key.H: SelectTool(DrawingTool.Highlighter); break;
@@ -551,6 +556,11 @@ namespace Panseo.Views
             if (CaptureFiles.Save(this, RenderCapture())) _status.Text = "PNG 파일을 저장했습니다.";
         }
 
+        public void CopyCapture()
+        {
+            _status.Text = CaptureFiles.Copy(RenderCapture()) ? "편집한 이미지를 복사했습니다." : "이미지를 복사할 수 없습니다.";
+        }
+
         public void PinCapture()
         {
             new PinnedCaptureWindow(RenderCapture(), CaptureBounds).Show();
@@ -566,6 +576,10 @@ namespace Panseo.Views
             {
                 try { Clipboard.SetImage(bitmap); Clipboard.Flush(); return true; }
                 catch (System.Runtime.InteropServices.ExternalException)
+                {
+                    if (attempt < 2) Thread.Sleep(50);
+                }
+                catch (UnauthorizedAccessException)
                 {
                     if (attempt < 2) Thread.Sleep(50);
                 }

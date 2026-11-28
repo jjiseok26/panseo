@@ -72,7 +72,11 @@ if (-not $windowTarget.Contains($cursor) -or $windowTarget.Width -lt $target.Wid
 $handles = $selector.GetType().GetField('_handles',$flags).GetValue($selector)
 if ($handles.Count -ne 8 -or @($handles | Where-Object { $_.Visibility -ne [Windows.Visibility]::Visible }).Count -ne 0) { throw 'Selection resize handles are hidden' }
 $confirm = $selector.GetType().GetField('_confirm',$flags).GetValue($selector)
-if ($confirm.Margin.Left -le $selection.Right -or $confirm.Margin.Top -ne $selection.Top) { throw 'Confirm button is not beside selection' }
+$actions = $selector.GetType().GetField('_actions',$flags).GetValue($selector)
+$dimensions = $selector.GetType().GetField('_dimensions',$flags).GetValue($selector)
+if ($actions.Children.Count -ne 6 -or $actions.Visibility -ne [Windows.Visibility]::Visible -or -not $confirm.IsEnabled) { throw 'Capture action toolbar missing' }
+if ($actions.Margin.Top -lt $selection.Bottom -or $actions.Margin.Top -gt $surface.ActualHeight - $actions.Height) { throw 'Capture action toolbar is not beside selection' }
+if ($dimensions.Text -notlike '*70*80*') { throw 'Capture dimensions missing' }
 [Panseo.Models.AppSettings]::Instance.DrawingColor = [Windows.Media.Colors]::Red
 [Panseo.Models.AppSettings]::Instance.StrokeThickness = 4
 $editor = [Panseo.Views.CaptureEditorWindow]::new($image)
@@ -93,7 +97,8 @@ if ($iconControls.Count -lt 16) { throw 'Capture editor toolbar actions missing'
 $eraser = @($iconControls | Where-Object { $_.ToolTip -like '지우개*' })[0]
 $clear = @($iconControls | Where-Object { $_.ToolTip -eq '전체 지우기' })[0]
 $fileButton = @($iconControls | Where-Object { $_.ToolTip -like '파일로 저장하기*' })[0]
-if ($eraser.Content -isnot [Windows.Controls.Canvas] -or $clear.Content -ne '🗑' -or -not $fileButton) { throw 'Eraser, trash, or file save action missing' }
+$copyButton = @($iconControls | Where-Object { $_.ToolTip -like '이미지 복사*' })[0]
+if ($eraser.Content -isnot [Windows.Controls.Canvas] -or $clear.Content -ne '🗑' -or -not $fileButton -or -not $copyButton) { throw 'Eraser, trash, copy, or file save action missing' }
 if ($picker[0].Content -isnot [Windows.Shapes.Ellipse] -or $picker[0].Content.Fill -isnot [Windows.Media.LinearGradientBrush]) { throw 'Gradient palette icon missing' }
 $colorPicker = $assembly.GetType('Panseo.Helpers.ColorPicker')
 $fromHsv = $colorPicker.GetMethod('FromHsv',[Reflection.BindingFlags]'Static,NonPublic')
@@ -109,7 +114,10 @@ $canvas = $editor.GetType().GetField('_canvas', $flags).GetValue($editor)
 $wheel = [Windows.Input.MouseWheelEventArgs]::new([Windows.Input.Mouse]::PrimaryDevice,0,120)
 $wheel.RoutedEvent = [Windows.Input.Mouse]::PreviewMouseWheelEvent
 $canvas.RaiseEvent($wheel)
-if (-not $wheel.Handled -or $stroke[0].Value -ne 13) { throw 'Capture wheel stroke adjustment failed' }
+if ($wheel.Handled -or $stroke[0].Value -ne 12) { throw 'Bare wheel changed capture stroke' }
+$adjustWheel = $editor.GetType().GetMethod('AdjustStrokeWheel',[Reflection.BindingFlags]'Instance,NonPublic,Public')
+[void]$adjustWheel.Invoke($editor,@([Windows.Input.ModifierKeys]::Alt,$wheel))
+if (-not $wheel.Handled -or $stroke[0].Value -ne 13) { throw 'Capture Alt+wheel stroke adjustment failed' }
 [Panseo.Models.AppSettings]::Instance.StrokeThickness = 4
 $toolButton = @($toolbarControls | Where-Object { $_ -is [Windows.Controls.RadioButton] })[0]
 $actionButton = @($toolbarControls | Where-Object { $_ -is [Windows.Controls.Button] })[0]
@@ -135,6 +143,13 @@ $text = $editor.GetType().GetField('_textEditor', $flags).GetValue($editor)
 $text.Text = '캡처 테스트'
 $result = $editor.RenderCapture()
 if ($canvas.Children.Count -ne 5 -or $result.PixelWidth -ne 320 -or $result.PixelHeight -ne 200) { throw 'Annotation render failed' }
+$editor.CopyCapture()
+try {
+    $copied = [Windows.Clipboard]::GetImage()
+    if (-not $copied -or $copied.PixelWidth -ne 320 -or $copied.PixelHeight -ne 200) { throw 'Capture editor copy failed' }
+} catch [UnauthorizedAccessException] {
+    Write-Host 'SKIP: clipboard unavailable in this session'
+}
 $transparent = $editor.RenderDrawingOnly()
 $transparentPixels = [byte[]]::new(320*200*4)
 $transparent.CopyPixels($transparentPixels,1280,0)

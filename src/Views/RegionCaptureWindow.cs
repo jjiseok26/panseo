@@ -12,6 +12,8 @@ using Panseo.Native;
 
 namespace Panseo.Views
 {
+    public enum RegionCaptureAction { Edit, Copy, Pin, Save }
+
     public sealed class RegionCaptureWindow : Window
     {
         private readonly Grid _surface;
@@ -20,6 +22,8 @@ namespace Panseo.Views
         private readonly Rectangle _outline;
         private readonly Rectangle[] _handles = new Rectangle[8];
         private readonly Button _confirm;
+        private readonly StackPanel _actions;
+        private readonly TextBlock _dimensions;
         private readonly TextBlock _instruction;
         private readonly DispatcherTimer _hoverTimer;
         private Point _start;
@@ -36,6 +40,8 @@ namespace Panseo.Views
         private System.Drawing.Rectangle _lastTarget;
         public BitmapSource Selection { get; private set; }
         public System.Drawing.Rectangle SelectionBounds { get; private set; }
+        public RegionCaptureAction DefaultAction { get; set; }
+        public RegionCaptureAction Action { get; private set; }
 
         public RegionCaptureWindow(BitmapSource snapshot, System.Drawing.Rectangle bounds)
             : this(snapshot, bounds, System.Drawing.Rectangle.Empty, System.Windows.Forms.Cursor.Position) { }
@@ -49,7 +55,7 @@ namespace Panseo.Views
             _hoverTimer.Tick += (s, e) =>
             {
                 _hoverTimer.Stop();
-                if (_selecting || _manualSelection || _surface.ActualWidth <= 0) return;
+                if (_selecting || _manualSelection || _actions.IsMouseOver || _surface.ActualWidth <= 0) return;
                 var pointer = System.Windows.Forms.Cursor.Position;
                 PositionInstruction(bounds, pointer);
                 System.Drawing.Rectangle target;
@@ -84,20 +90,33 @@ namespace Panseo.Views
                 overlay.Children.Add(_handles[i]);
             }
             _surface.Children.Add(overlay);
+            _dimensions = new TextBlock { Foreground = Brushes.White,
+                Background = new SolidColorBrush(Color.FromArgb(230, 32, 33, 36)),
+                Padding = new Thickness(7, 3, 7, 3), FontSize = 12,
+                HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Top,
+                Visibility = Visibility.Collapsed, IsHitTestVisible = false };
+            _surface.Children.Add(_dimensions);
             _instruction = new TextBlock
             {
                 Text = "포인터 이동: 자동 선택 · Tab: 요소/창 전환 · 드래그: 직접 선택 · Enter: 확정 · Esc: 취소",
                 Foreground = Brushes.White, Background = new SolidColorBrush(Color.FromArgb(220, 24, 24, 38)),
-                Padding = new Thickness(16, 10, 16, 10), FontSize = 16,
+                Padding = new Thickness(10, 6, 10, 6), FontSize = 12,
                 TextWrapping = TextWrapping.Wrap, HorizontalAlignment = HorizontalAlignment.Left,
                 VerticalAlignment = VerticalAlignment.Top, IsHitTestVisible = false
             };
             _surface.Children.Add(_instruction);
-            _confirm = new Button { Content = "캡처 확정 (Enter)", Width = 160, Height = 40,
-                IsEnabled = false, Visibility = Visibility.Collapsed,
-                HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Top, Cursor = Cursors.Hand };
-            _confirm.Click += (s, e) => Confirm(snapshot);
-            _surface.Children.Add(_confirm);
+            _actions = new StackPanel { Orientation = Orientation.Horizontal, Width = 249, Height = 42,
+                Background = new SolidColorBrush(Color.FromRgb(32, 33, 36)),
+                HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Top,
+                Visibility = Visibility.Collapsed };
+            _actions.Children.Add(ActionButton("✎", "편집", RegionCaptureAction.Edit, snapshot));
+            _actions.Children.Add(ActionButton("⧉", "클립보드에 복사 (Ctrl+C)", RegionCaptureAction.Copy, snapshot));
+            _actions.Children.Add(ActionButton("⚑", "화면에 고정 (Ctrl+T)", RegionCaptureAction.Pin, snapshot));
+            _actions.Children.Add(ActionButton("▣", "파일로 저장", RegionCaptureAction.Save, snapshot));
+            _confirm = ActionButton("✓", "캡처 확정 (Enter)", RegionCaptureAction.Edit, snapshot, true);
+            _actions.Children.Add(_confirm);
+            _actions.Children.Add(ActionButton("×", "취소 (Esc)", RegionCaptureAction.Edit, snapshot, false, true));
+            _surface.Children.Add(_actions);
             Content = _surface;
             Loaded += (s, e) => Win32.SetWindowPos(new WindowInteropHelper(this).Handle,
                 Win32.HWND_TOPMOST, bounds.X, bounds.Y, bounds.Width, bounds.Height, Win32.SWP_SHOWWINDOW);
@@ -118,7 +137,7 @@ namespace Panseo.Views
             Closed += (s, e) => _hoverTimer.Stop();
             _surface.MouseLeftButtonDown += (s, e) =>
             {
-                if (_confirm.IsMouseOver) return;
+                if (_actions.IsMouseOver) return;
                 _manualSelection = true;
                 _hoverTimer.Stop();
                 BeginSelectionAt(e.GetPosition(_surface));
@@ -132,7 +151,7 @@ namespace Panseo.Views
                 else
                 {
                     _surface.Cursor = CursorAt(point);
-                    if (!_manualSelection && !_hoverTimer.IsEnabled) _hoverTimer.Start();
+                    if (!_manualSelection && !_actions.IsMouseOver && !_hoverTimer.IsEnabled) _hoverTimer.Start();
                 }
             };
             _surface.MouseLeftButtonUp += (s, e) =>
@@ -147,7 +166,11 @@ namespace Panseo.Views
             PreviewKeyDown += (s, e) =>
             {
                 if (e.Key == Key.Escape) Close();
-                else if (e.Key == Key.Enter) { Confirm(snapshot); e.Handled = true; }
+                else if (e.Key == Key.Enter) { Confirm(snapshot, DefaultAction); e.Handled = true; }
+                else if (e.Key == Key.C && Keyboard.Modifiers == ModifierKeys.Control)
+                { Confirm(snapshot, RegionCaptureAction.Copy); e.Handled = true; }
+                else if (e.Key == Key.T && Keyboard.Modifiers == ModifierKeys.Control)
+                { Confirm(snapshot, RegionCaptureAction.Pin); e.Handled = true; }
                 else if (e.Key == Key.Tab)
                 {
                     _preferElement = !_preferElement;
@@ -158,6 +181,18 @@ namespace Panseo.Views
                     e.Handled = true;
                 }
             };
+        }
+
+        private Button ActionButton(string icon, string tip, RegionCaptureAction action, BitmapSource snapshot,
+            bool useDefault = false, bool cancel = false)
+        {
+            var button = new Button { Content = icon, ToolTip = tip, Width = 38, Height = 34,
+                Margin = new Thickness(2, 4, 1, 4), FontSize = 18,
+                Background = new SolidColorBrush(Color.FromRgb(60, 64, 67)),
+                Foreground = Brushes.White, BorderBrush = new SolidColorBrush(Color.FromRgb(95, 99, 104)),
+                Cursor = Cursors.Hand };
+            button.Click += (s, e) => { if (cancel) Close(); else Confirm(snapshot, useDefault ? DefaultAction : action); };
+            return button;
         }
 
         internal static Rect MapToViewport(System.Drawing.Rectangle selection, System.Drawing.Rectangle desktop, Size viewport)
@@ -206,11 +241,12 @@ namespace Panseo.Views
             _instruction.Margin = new Thickness(monitorLeft + (monitorWidth - _instruction.Width) / 2, 12, 0, 0);
         }
 
-        private void Confirm(BitmapSource snapshot)
+        private void Confirm(BitmapSource snapshot, RegionCaptureAction action)
         {
             if (_selection.Width < 3 || _selection.Height < 3) return;
             Selection = Crop(snapshot, _selection, _surface.RenderSize);
             SelectionBounds = MapToDesktop(_selection, _bounds, _surface.RenderSize);
+            Action = action;
             DialogResult = true;
         }
 
@@ -279,20 +315,19 @@ namespace Panseo.Views
                 Canvas.SetLeft(_handles[i], xs[positions[i, 0]] - 5);
                 Canvas.SetTop(_handles[i], ys[positions[i, 1]] - 5);
             }
-            if (_confirm != null)
+            if (_actions != null)
             {
                 _confirm.IsEnabled = valid;
-                _confirm.Visibility = valid ? Visibility.Visible : Visibility.Collapsed;
+                _actions.Visibility = valid ? Visibility.Visible : Visibility.Collapsed;
+                _dimensions.Visibility = valid ? Visibility.Visible : Visibility.Collapsed;
                 if (valid)
                 {
-                    double x, y;
-                    if (rect.Right + 170 <= _surface.ActualWidth) { x = rect.Right + 10; y = rect.Top; }
-                    else if (rect.Left >= 170) { x = rect.Left - 170; y = rect.Top; }
-                    else if (rect.Bottom + 50 <= _surface.ActualHeight) { x = rect.Left; y = rect.Bottom + 10; }
-                    else { x = rect.Left; y = rect.Top - 50; }
-                    _confirm.Margin = new Thickness(
-                        Math.Max(0, Math.Min(_surface.ActualWidth - 160, x)),
-                        Math.Max(0, Math.Min(_surface.ActualHeight - 40, y)), 0, 0);
+                    var pixels = MapToDesktop(rect, _bounds, _surface.RenderSize);
+                    _dimensions.Text = pixels.Width + " × " + pixels.Height + " px";
+                    double barX = Math.Max(0, Math.Min(_surface.ActualWidth - _actions.Width, rect.Right - _actions.Width));
+                    double barY = rect.Bottom + 48 <= _surface.ActualHeight ? rect.Bottom + 6 : Math.Max(0, rect.Top - 48);
+                    _actions.Margin = new Thickness(barX, barY, 0, 0);
+                    _dimensions.Margin = new Thickness(Math.Max(0, rect.Left), Math.Max(0, rect.Top - 28), 0, 0);
                 }
             }
         }

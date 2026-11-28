@@ -1125,17 +1125,22 @@ namespace Panseo.Views
                 var cursor = System.Windows.Forms.Cursor.Position;
                 var suggested = CaptureTargetDetector.Detect(cursor, bounds);
                 BitmapSource snapshot = ScreenCapture.Take(bounds);
-                var selector = new RegionCaptureWindow(snapshot, bounds, suggested, cursor);
+                var selector = new RegionCaptureWindow(snapshot, bounds, suggested, cursor)
+                { DefaultAction = pin ? RegionCaptureAction.Pin : RegionCaptureAction.Edit };
                 if (selector.ShowDialog() == true)
                 {
                     _lastCapture = selector.Selection;
                     _lastCaptureBounds = selector.SelectionBounds;
-                    if (pin) new PinnedCaptureWindow(selector.Selection, selector.SelectionBounds).Show();
+                    if (selector.Action == RegionCaptureAction.Pin)
+                        new PinnedCaptureWindow(selector.Selection, selector.SelectionBounds).Show();
+                    else if (selector.Action == RegionCaptureAction.Save)
+                        CaptureFiles.Save(this, selector.Selection);
                     else
                     {
                         if (!CaptureFiles.Copy(selector.Selection))
                             MessageBox.Show("캡처 이미지를 클립보드에 복사할 수 없습니다.", "Panseo", MessageBoxButton.OK, MessageBoxImage.Error);
-                        new CaptureEditorWindow(selector.Selection) { CaptureBounds = selector.SelectionBounds }.Show();
+                        if (selector.Action == RegionCaptureAction.Edit)
+                            new CaptureEditorWindow(selector.Selection) { CaptureBounds = selector.SelectionBounds }.Show();
                     }
                 }
             }

@@ -40,7 +40,7 @@ namespace Panseo.Views
             SizeChanged += (s, e) => Reset();
             PreviewMouseWheel += (s, e) =>
             {
-                if ((Keyboard.Modifiers & ModifierKeys.Control) != 0) return;
+                if ((Keyboard.Modifiers & (ModifierKeys.Control | ModifierKeys.Alt)) != 0) return;
                 ZoomAt(Math.Pow(1.2, e.Delta / 120.0), e.GetPosition(this));
                 e.Handled = true;
             };

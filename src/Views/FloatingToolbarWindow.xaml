@@ -304,7 +304,7 @@
                                         <ColumnDefinition Width="Auto" />
                                     </Grid.ColumnDefinitions>
                                     <TextBlock Grid.Column="0" Text="굵기" Foreground="{StaticResource TextSecondaryBrush}" FontSize="10" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                                    <Slider Grid.Column="1" x:Name="SliderStrokeThickness" Minimum="2" Maximum="24" Value="4" VerticalAlignment="Center" ValueChanged="SliderStrokeThickness_ValueChanged" ToolTip="판서 중 휠로 굵기 변경"/>
+                                    <Slider Grid.Column="1" x:Name="SliderStrokeThickness" Minimum="2" Maximum="24" Value="4" VerticalAlignment="Center" ValueChanged="SliderStrokeThickness_ValueChanged" ToolTip="판서 중 Alt+휠로 굵기 변경"/>
                                     <TextBlock Grid.Column="2" x:Name="TxtStrokeVal" Text="4" Foreground="#FFFFFF" FontSize="10" Width="24" TextAlignment="Right" VerticalAlignment="Center"/>
                                 </Grid>
 

@@ -191,6 +191,7 @@ namespace Panseo.Views
                         return new IntPtr(1);
                     }
                     if (delta != 0 && AppSettings.Instance.CurrentTool != DrawingTool.None &&
+                        Win32.GetAsyncKeyState(0x12) < 0 && Win32.GetAsyncKeyState(0x11) >= 0 &&
                         Win32.GetAncestor(Win32.WindowFromPoint(wheel.pt), 2) == _hwnd)
                     {
                         Dispatcher.BeginInvoke((Action)(() => AppSettings.Instance.StrokeThickness =
