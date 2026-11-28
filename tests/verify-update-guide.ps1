@@ -8,6 +8,8 @@ $cards = $guide.Children[1]
 if ($cards.Children.Count -ne 4) { throw 'Update illustrations missing' }
 if (-not $cards.Children[0].Child.Children[0].Text.Contains('Ctrl+1')) { throw 'Zoom shortcut in illustration incorrect' }
 if ($cards.Children[1].Child.Children[1].Child.Children.Count -ne 8) { throw 'Number illustration missing' }
+$pinGuide = $cards.Children[2].Child.Children[2].Text
+if (-not $pinGuide.Contains('F1') -or -not $pinGuide.Contains('F3')) { throw 'Capture pin guide is stale' }
 $guide.Measure([Windows.Size]::new(720,[double]::PositiveInfinity))
 $height = [int][Math]::Ceiling($guide.DesiredSize.Height)
 $guide.Arrange([Windows.Rect]::new(0,0,720,$height))

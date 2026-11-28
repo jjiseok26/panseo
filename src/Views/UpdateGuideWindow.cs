@@ -77,11 +77,11 @@ namespace Panseo.Views
                 "시작번호에 숫자를 입력하고 ‘적용’ 또는 Enter를 누르세요. 오른쪽 − / +로 번호 크기를 조절합니다. 5를 입력하면 다음 클릭부터 5, 6, 7…로 이어집니다."));
             var pin = Picture();
             Box(pin, 18, 8, 224, 84, "", Brushes.AliceBlue);
-            Label(pin, 35, 18, "고정 캡처", 13);
+            Label(pin, 35, 18, "F1 캡처 → F3 고정", 13);
             Label(pin, 35, 48, "휠 ↕", 16);
             Label(pin, 112, 50, "Ctrl + 드래그", 12);
-            cards.Children.Add(Card("고정 캡처도 확대/축소", pin,
-                "F3으로 영역을 고정하면 이미지가 자동 복사됩니다. 오른쪽 아래 조절점으로 창 크기를 바꾸고, 이미지 위에서 휠로 확대합니다. 우클릭하면 저장하기·복사하기·닫기가 나옵니다."));
+            cards.Children.Add(Card("캡처 후 고정·크기 조절", pin,
+                "F1로 캡처한 뒤 F3으로 편집 이미지나 클립보드 이미지를 고정합니다. ‘새 영역 고정’ 버튼은 새 캡처를 바로 고정합니다. 휠이나 오른쪽 아래 조절점으로 크기를 바꾸고 우클릭으로 저장·복사·닫기를 선택합니다."));
             var menu = Picture();
             Box(menu, 6, 30, 74, 36, "SHA-256", Brushes.LightSteelBlue);
             Label(menu, 88, 37, "→", 20);
